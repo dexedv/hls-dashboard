@@ -1,0 +1,145 @@
+import { useState } from 'react';
+import DashboardLayout from '@/Layouts/DashboardLayout';
+import { Head, Link, useForm } from '@inertiajs/react';
+
+export default function NotesIndex({ notes, pinned, projects, customers, filters }) {
+    const { data, setData, post, processing } = useForm({
+        title: '',
+        content: '',
+        project_id: '',
+        customer_id: '',
+        pinned: false,
+    });
+
+    const [showModal, setShowModal] = useState(false);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post(route('notes.store'), {
+            onSuccess: () => {
+                setShowModal(false);
+                setData({ title: '', content: '', project_id: '', customer_id: '', pinned: false });
+            }
+        });
+    };
+
+    return (
+        <DashboardLayout title="Notizen">
+            <Head title="Notizen" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Notizen</h1>
+                    <p className="text-sm text-gray-500 mt-1">Verwalten Sie Ihre Notizen und Wikis</p>
+                </div>
+                <button onClick={() => setShowModal(true)} className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    Neue Notiz
+                </button>
+            </div>
+
+            {/* Pinned Notes */}
+            {pinned && pinned.length > 0 && (
+                <div className="mb-6">
+                    <h2 className="text-sm font-medium text-gray-500 mb-3">Angeheftet</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {pinned.map((note) => (
+                            <Link key={note.id} href={route('notes.show', note.id)} className="block bg-white rounded-lg shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+                                <div className="flex items-start justify-between">
+                                    <h3 className="font-medium text-gray-900">{note.title}</h3>
+                                    <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-2 line-clamp-2">{note.content || 'Keine Inhalte'}</p>
+                                {note.project && <p className="text-xs text-primary-600 mt-2">{note.project.name}</p>}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* All Notes */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+                {notes.data.length === 0 ? (
+                    <div className="p-12 text-center text-gray-500">
+                        <p>Noch keine Notizen vorhanden</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                        {notes.data.map((note) => (
+                            <Link key={note.id} href={route('notes.show', note.id)} className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                                <div className="flex items-start justify-between">
+                                    <h3 className="font-medium text-gray-900">{note.title}</h3>
+                                    {note.pinned && <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>}
+                                </div>
+                                <p className="text-sm text-gray-500 mt-2 line-clamp-3">{note.content || 'Keine Inhalte'}</p>
+                                <div className="flex items-center gap-2 mt-3">
+                                    {note.project && <span className="text-xs bg-primary-50 text-primary-600 px-2 py-0.5 rounded">{note.project.name}</span>}
+                                    {note.customer && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{note.customer.name}</span>}
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Pagination */}
+            {notes.links && notes.links.length > 3 && (
+                <div className="mt-4 flex justify-center gap-2">
+                    {notes.links.map((link, index) => (
+                        <Link
+                            key={index}
+                            href={link.url || '#'}
+                            className={`px-3 py-1 rounded ${link.active ? 'bg-primary-600 text-white' : 'bg-white border'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Create Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <h2 className="text-xl font-semibold">Neue Notiz</h2>
+                            <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm mb-1">Titel *</label>
+                                <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="w-full border rounded-lg px-4 py-2" required />
+                            </div>
+                            <div>
+                                <label className="block text-sm mb-1">Inhalt</label>
+                                <textarea value={data.content} onChange={e => setData('content', e.target.value)} rows={4} className="w-full border rounded-lg px-4 py-2" />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="block text-sm mb-1">Projekt</label>
+                                    <select value={data.project_id} onChange={e => setData('project_id', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                        <option value="">Kein Projekt</option>
+                                        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm mb-1">Kunde</label>
+                                    <select value={data.customer_id} onChange={e => setData('customer_id', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                        <option value="">Kein Kunde</option>
+                                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input type="checkbox" id="pinned" checked={data.pinned} onChange={e => setData('pinned', e.target.checked)} className="rounded" />
+                                <label htmlFor="pinned" className="text-sm">Anheften</label>
+                            </div>
+                            <div className="flex gap-3 justify-end mt-6">
+                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">Abbrechen</button>
+                                <button type="submit" disabled={processing} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Speichern</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </DashboardLayout>
+    );
+}
