@@ -1,6 +1,10 @@
 #!/bin/bash
-cd /var/www/vhosts/hls-services.de/dashboard.hls-services.de/httpdocs
+export COMPOSER_ALLOW_SUPERUSER=1
+
+cd /var/www/vhosts/hls-services.de/dashboard.hls-services.de
+
 composer install --optimize-autoloader --no-dev --no-interaction
+
 /opt/plesk/php/8.3/bin/php artisan config:cache
 /opt/plesk/php/8.3/bin/php artisan route:cache
 /opt/plesk/php/8.3/bin/php artisan view:cache
