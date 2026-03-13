@@ -158,49 +158,9 @@ class TeamController extends Controller
      */
     public function edit($id)
     {
-        $useSupabase = SupabaseHelper::useSupabase();
-        $supabaseAvailable = $useSupabase;
-
-        if ($useSupabase) {
-            // Try to fetch user from Supabase first
-            try {
-                $user = SupabaseRepository::users()->find($id);
-
-                // Get all available labels
-                try {
-                    $labels = SupabaseRepository::labels()->all()->toArray();
-
-                    // Get user's assigned labels
-                    try {
-                        $allUserLabels = SupabaseRepository::userLabels()->get();
-                        $userLabelIds = $allUserLabels->filter(function($ul) use ($id) {
-                            return $ul['user_id'] == $id;
-                        })->pluck('label_id')->toArray();
-
-                        // Add labels to user object
-                        $user['labels'] = collect($labels)->filter(function($label) use ($userLabelIds) {
-                            return in_array($label['id'], $userLabelIds, true);
-                        })->values()->toArray();
-                    } catch (\Exception $e) {
-                        $user['labels'] = [];
-                    }
-                } catch (\Exception $e) {
-                    // Labels table doesn't exist in Supabase, fall back completely
-                    $supabaseAvailable = false;
-                }
-            } catch (\Exception $e) {
-                // User doesn't exist in Supabase, fall back to local DB
-                $supabaseAvailable = false;
-            }
-        }
-
-        if (!$supabaseAvailable) {
-            // Fallback to local database
-            $user = User::with('labels')->findOrFail($id);
-            $labels = Label::all();
-            $user = $user->toArray();
-            $user['labels'] = $user['labels'] ?? [];
-        }
+        // Always try local DB first for now
+        $user = User::with('labels')->findOrFail($id);
+        $labels = Label::all();
 
         return Inertia::render('Team/Edit', [
             'user' => $user,
