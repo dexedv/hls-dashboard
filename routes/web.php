@@ -26,6 +26,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\LexwareController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -151,6 +152,13 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
         // Quote sync
         Route::post('quotes/sync-all', [LexwareController::class, 'syncAllQuotes'])->name('lexware.quotes.syncAll');
         Route::post('quotes/{quote}/sync', [LexwareController::class, 'syncQuote'])->name('lexware.quotes.sync');
+
+        // Chat routes
+        Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/users', [ChatController::class, 'users'])->name('chat.users');
+        Route::get('/chat/conversation/{userId}', [ChatController::class, 'conversation'])->name('chat.conversation');
+        Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
+        Route::get('/chat/unread', [ChatController::class, 'unread'])->name('chat.unread');
     });
 });
 

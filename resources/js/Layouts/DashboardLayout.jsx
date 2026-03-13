@@ -1,5 +1,6 @@
 import { Link, usePage, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
+import ChatButton from '@/Components/ChatButton';
 
 // Time formatting function
 function formatTimeAgo(dateString) {
@@ -506,6 +507,9 @@ export default function DashboardLayout({ children, title }) {
                     {children}
                 </main>
             </div>
+
+            {/* Chat Button */}
+            <ChatButton />
         </div>
     );
 }
