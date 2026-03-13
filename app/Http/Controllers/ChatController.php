@@ -9,14 +9,35 @@ use App\Repositories\SupabaseRepository;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class ChatController extends Controller
 {
+    /**
+     * Ensure chat table exists
+     */
+    private function ensureChatTable()
+    {
+        if (!SupabaseHelper::useSupabase() && !Schema::hasTable('chat_messages')) {
+            Schema::create('chat_messages', function ($table) {
+                $table->id();
+                $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+                $table->text('message');
+                $table->boolean('is_read')->default(false);
+                $table->timestamps();
+            });
+        }
+    }
+
     /**
      * Show chat page with all messages
      */
     public function index(Request $request)
     {
+        // Ensure table exists
+        $this->ensureChatTable();
+
         $currentUser = Auth::user();
         $userId = $currentUser->id;
 
@@ -140,6 +161,9 @@ class ChatController extends Controller
      */
     public function send(Request $request)
     {
+        // Ensure table exists
+        $this->ensureChatTable();
+
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
             'message' => 'required|string',
