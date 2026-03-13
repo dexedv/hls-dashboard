@@ -16,18 +16,35 @@ class TeamController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
+        $useSupabase = SupabaseHelper::useSupabase();
+
+        // Get labels - try Supabase first, fall back to local DB
+        $labels = [];
+        if ($useSupabase) {
+            try {
+                $labels = SupabaseRepository::labels()->all()->toArray();
+            } catch (\Exception $e) {
+                // Fall back to local DB if Supabase fails
+                $useSupabase = false;
+            }
+        }
+
+        if (!$useSupabase) {
+            $labels = Label::all()->toArray();
+        }
+
+        if ($useSupabase) {
             $users = SupabaseRepository::users()->all();
 
-            // Get all labels and user_labels to attach to users
-            $allLabels = [];
+            // Get user_labels to attach to users
             $allUserLabels = [];
             try {
-                $allLabels = SupabaseRepository::labels()->all()->keyBy('id')->toArray();
                 $allUserLabels = SupabaseRepository::userLabels()->get()->toArray();
             } catch (\Exception $e) {
-                // Tables might not exist yet
+                // Tables might not exist
             }
+
+            $allLabels = collect($labels)->keyBy('id')->toArray();
 
             // Attach labels to each user
             $users = $users->map(function ($user) use ($allLabels, $allUserLabels) {
@@ -42,12 +59,11 @@ class TeamController extends Controller
 
             return Inertia::render('Team/Index', [
                 'users' => $users,
-                'labels' => array_values($allLabels),
+                'labels' => $labels,
             ]);
         }
 
         $users = User::with('labels')->orderBy('name', 'asc')->paginate(10);
-        $labels = Label::all();
 
         return Inertia::render('Team/Index', [
             'users' => $users,
@@ -142,32 +158,41 @@ class TeamController extends Controller
      */
     public function edit($id)
     {
-        if (SupabaseHelper::useSupabase()) {
+        $useSupabase = SupabaseHelper::useSupabase();
+
+        if ($useSupabase) {
             $user = SupabaseRepository::users()->find($id);
 
-            // Get all available labels
+            // Get all available labels - try Supabase first, fall back to local DB
+            $labels = [];
             try {
-                $allLabels = SupabaseRepository::labels()->all()->toArray();
+                $labels = SupabaseRepository::labels()->all()->toArray();
             } catch (\Exception $e) {
-                $allLabels = [];
+                // Fall back to local DB if Supabase fails
+                $useSupabase = false;
             }
 
-            // Get user's assigned labels
-            try {
-                $allUserLabels = SupabaseRepository::userLabels()->get();
-                $userLabelIds = $allUserLabels->filter(function($ul) use ($id) {
-                    return $ul['user_id'] == $id;
-                })->pluck('label_id')->toArray();
+            if ($useSupabase) {
+                // Get user's assigned labels
+                try {
+                    $allUserLabels = SupabaseRepository::userLabels()->get();
+                    $userLabelIds = $allUserLabels->filter(function($ul) use ($id) {
+                        return $ul['user_id'] == $id;
+                    })->pluck('label_id')->toArray();
 
-                // Add labels to user object
-                $user['labels'] = collect($allLabels)->filter(function($label) use ($userLabelIds) {
-                    return in_array($label['id'], $userLabelIds, true);
-                })->values()->toArray();
-            } catch (\Exception $e) {
-                $user['labels'] = [];
+                    // Add labels to user object
+                    $user['labels'] = collect($labels)->filter(function($label) use ($userLabelIds) {
+                        return in_array($label['id'], $userLabelIds, true);
+                    })->values()->toArray();
+                } catch (\Exception $e) {
+                    $user['labels'] = [];
+                }
+            } else {
+                // Fallback: get labels from local DB
+                $labels = Label::all()->toArray();
+                $localUser = User::with('labels')->find($id);
+                $user['labels'] = $localUser ? $localUser->labels->toArray() : [];
             }
-
-            $labels = $allLabels;
         } else {
             $user = User::with('labels')->findOrFail($id);
             $labels = Label::all();
