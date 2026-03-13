@@ -254,18 +254,14 @@ class EnvManager
     }
 
     /**
-     * Create default label
+     * Create default labels
      */
     public function createDefaultLabel(): void
     {
         try {
-            $label = \App\Models\Label::where('name', 'Standard')->first();
-            if (!$label) {
-                \App\Models\Label::create([
-                    'name' => 'Standard',
-                    'color' => '#3b82f6',
-                ]);
-            }
+            // Run the LabelSeeder to create all default labels
+            $seeder = new \Database\Seeders\LabelSeeder();
+            $seeder->run();
         } catch (\Exception $e) {
             // Ignore if labels table doesn't exist yet
         }

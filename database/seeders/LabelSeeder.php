@@ -3,17 +3,14 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\Label;
 use App\Repositories\SupabaseRepository;
+use App\Services\SupabaseHelper;
 
 class LabelSeeder extends Seeder
 {
     public function run(): void
     {
-        // Only run if using Supabase
-        if (!config('services.supabase.url')) {
-            return;
-        }
-
         $labels = [
             [
                 'name' => 'Außendienst',
@@ -46,18 +43,29 @@ class LabelSeeder extends Seeder
                 'description' => 'Kundensupport',
             ],
             [
-                'name' => ' Verwaltung',
+                'name' => 'Verwaltung',
                 'slug' => 'verwaltung',
                 'color' => '#6b7280',
                 'description' => 'Verwaltungspersonal',
             ],
         ];
 
-        foreach ($labels as $label) {
-            try {
-                SupabaseRepository::labels()->create($label);
-            } catch (\Exception $e) {
-                // Label might already exist
+        if (SupabaseHelper::useSupabase()) {
+            // Use Supabase
+            foreach ($labels as $label) {
+                try {
+                    SupabaseRepository::labels()->create($label);
+                } catch (\Exception $e) {
+                    // Label might already exist
+                }
+            }
+        } else {
+            // Use local database (MySQL/SQLite)
+            foreach ($labels as $label) {
+                Label::firstOrCreate(
+                    ['slug' => $label['slug']],
+                    $label
+                );
             }
         }
     }

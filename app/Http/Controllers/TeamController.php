@@ -158,15 +158,11 @@ class TeamController extends Controller
      */
     public function edit($id)
     {
-        // Try local DB first (most reliable)
-        try {
-            $user = User::with('labels')->findOrFail($id);
-            $labels = Label::all();
-        } catch (\Exception $e) {
-            // Fallback if tables don't exist
-            $user = User::findOrFail($id);
-            $labels = [];
-        }
+        // Get user with labels
+        $user = User::with('labels')->findOrFail($id);
+
+        // Get all available labels
+        $labels = Label::all();
 
         return Inertia::render('Team/Edit', [
             'user' => $user,
