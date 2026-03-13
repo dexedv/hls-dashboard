@@ -18,32 +18,34 @@ class ChatController extends Controller
      */
     private function ensureChatTable()
     {
-        try {
-            $useSupabase = false;
-            try {
-                $useSupabase = SupabaseHelper::useSupabase();
-            } catch (\Exception $e) {
-                $useSupabase = false;
-            }
-
-            if (!$useSupabase) {
-                if (!Schema::hasTable('chat_messages')) {
-                    Schema::create('chat_messages', function ($table) {
-                        $table->id();
-                        $table->unsignedBigInteger('sender_id');
-                        $table->unsignedBigInteger('receiver_id');
-                        $table->text('message');
-                        $table->boolean('is_read')->default(false);
-                        $table->timestamps();
-
-                        $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
-                        $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
-                    });
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::error('Chat table creation failed: ' . $e->getMessage());
+        // Skip for Supabase
+        if ($this->isSupabase()) {
+            return;
         }
+
+        // Create table if not exists
+        if (!Schema::hasTable('chat_messages')) {
+            Schema::create('chat_messages', function ($table) {
+                $table->id();
+                $table->unsignedBigInteger('sender_id');
+                $table->unsignedBigInteger('receiver_id');
+                $table->text('message');
+                $table->boolean('is_read')->default(false);
+                $table->timestamps();
+
+                $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
+    }
+
+    /**
+     * Check if using Supabase
+     */
+    private function isSupabase()
+    {
+        $dbDriver = config('database.default');
+        return $dbDriver === 'pgsql' || config('services.supabase.url');
     }
 
     /**
