@@ -88,7 +88,7 @@ class TeamController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role' => 'nullable|in:admin,manager,employee,viewer,support,finance,sales,guest',
+            'role' => 'nullable|in:owner,admin,manager,employee,viewer,support,finance,sales,guest',
             'phone' => 'nullable|string|max:50',
             'labels' => 'nullable|array',
         ]);
@@ -183,7 +183,7 @@ class TeamController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'password' => 'nullable|string|min:8',
-            'role' => 'nullable|in:admin,manager,employee,viewer,support,finance,sales,guest',
+            'role' => 'nullable|in:owner,admin,manager,employee,viewer,support,finance,sales,guest',
             'phone' => 'nullable|string|max:50',
             'labels' => 'nullable|array',
         ]);

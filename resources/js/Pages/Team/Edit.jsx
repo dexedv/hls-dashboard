@@ -98,9 +98,10 @@ export default function TeamEdit({ user, labels }) {
                                 onChange={(e) => setData('role', e.target.value)}
                                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             >
-                                <option value="employee">Mitarbeiter</option>
-                                <option value="manager">Manager</option>
+                                <option value="owner">Inhaber</option>
                                 <option value="admin">Administrator</option>
+                                <option value="manager">Manager</option>
+                                <option value="employee">Mitarbeiter</option>
                                 <option value="viewer">Betrachter</option>
                                 <option value="support">Support</option>
                                 <option value="finance">Finanzen</option>
