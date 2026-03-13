@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
+import SearchInput from '@/Components/SearchInput';
+import EmptyState from '@/Components/EmptyState';
 
-export default function QuotesIndex({ quotes, customers }) {
-    const statusColors = { draft: 'bg-gray-100 text-gray-800', sent: 'bg-blue-100 text-blue-800', accepted: 'bg-green-100 text-green-800', declined: 'bg-red-100 text-red-800', expired: 'bg-yellow-100 text-yellow-800' };
-    const statusLabels = { draft: 'Entwurf', sent: 'Gesendet', accepted: 'Angenommen', declined: 'Abgelehnt', expired: 'Abgelaufen' };
+export default function QuotesIndex({ quotes, customers, statuses = [] }) {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Dynamic status lookup from props
+    const getStatusInfo = (statusValue) => {
+        const status = statuses.find(s => s.value === statusValue);
+        return status ? { color: status.color, label: status.label } : { color: 'bg-gray-100 text-gray-800', label: statusValue };
+    };
 
     const [showModal, setShowModal] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
@@ -39,30 +47,50 @@ export default function QuotesIndex({ quotes, customers }) {
         return data.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
     };
 
+    const filteredQuotes = quotes.data.filter(quote =>
+        quote.number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        quote.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <DashboardLayout title="Angebote">
             <Head title="Angebote" />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div><h1 className="text-2xl font-bold text-gray-900">Angebote</h1><p className="text-sm text-gray-500 mt-1">Verwalten Sie Ihre Angebote</p></div>
-                <button onClick={() => setShowModal(true)} className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    Neues Angebot
-                </button>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-                {quotes.data.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500"><p>Noch keine Angebote vorhanden</p></div>
+            <PageHeader
+                title="Angebote"
+                subtitle="Verwalten Sie Ihre Angebote"
+                actions={
+                    <Button onClick={() => setShowModal(true)}>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        Neues Angebot
+                    </Button>
+                }
+            >
+                <div className="mt-4">
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Angebote suchen..."
+                    />
+                </div>
+            </PageHeader>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                {filteredQuotes.length === 0 ? (
+                    <EmptyState
+                        title="Noch keine Angebote vorhanden"
+                        description="Erstellen Sie Ihr erstes Angebot, um zu beginnen."
+                        onAction={() => setShowModal(true)}
+                    />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-100">
                             <thead className="bg-gray-50"><tr><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nummer</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kunde</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Betrag</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th></tr></thead>
                             <tbody className="divide-y divide-gray-100">
-                                {quotes.data.map((quote) => (
-                                    <tr key={quote.id} className="hover:bg-gray-50">
+                                {filteredQuotes.map((quote) => (
+                                    <tr key={quote.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{quote.number}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">{quote.customer?.name || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{quote.total ? parseFloat(quote.total).toLocaleString('de-DE') + ' €' : '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 text-xs rounded-full ${statusColors[quote.status]}`}>{statusLabels[quote.status] || quote.status}</span></td>
+                                        <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 text-xs rounded-full ${getStatusInfo(quote.status).color}`}>{getStatusInfo(quote.status).label}</span></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -73,34 +101,34 @@ export default function QuotesIndex({ quotes, customers }) {
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-6 border-b">
                             <h2 className="text-xl font-semibold">Neues Angebot</h2>
-                            <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded">
+                            <IconButton onClick={() => setShowModal(false)}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
+                            </IconButton>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Angebotsnummer *</label>
-                                    <input type="text" value={data.number} onChange={e => setData('number', e.target.value)} className="w-full border rounded-lg px-4 py-2" required />
+                                    <input type="text" value={data.number} onChange={e => setData('number', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
-                                    <select value={data.customer_id} onChange={e => setData('customer_id', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                    <select value={data.customer_id} onChange={e => setData('customer_id', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                                         <option value="">Kunde wählen</option>
                                         {customers?.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Gültig bis</label>
-                                    <input type="date" value={data.valid_until} onChange={e => setData('valid_until', e.target.value)} className="w-full border rounded-lg px-4 py-2" />
+                                    <input type="date" value={data.valid_until} onChange={e => setData('valid_until', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                    <select value={data.status} onChange={e => setData('status', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                    <select value={data.status} onChange={e => setData('status', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                                         <option value="draft">Entwurf</option>
                                         <option value="sent">Gesendet</option>
                                     </select>
@@ -110,22 +138,22 @@ export default function QuotesIndex({ quotes, customers }) {
                             <div className="border-t pt-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <label className="block text-sm font-medium text-gray-700">Positionen</label>
-                                    <button type="button" onClick={addItem} className="text-sm text-primary-600 hover:text-primary-700">+ Position hinzufügen</button>
+                                    <button type="button" onClick={addItem} className="text-sm text-primary-600 hover:text-primary-700 transition-colors">+ Position hinzufügen</button>
                                 </div>
                                 {data.items.map((item, index) => (
                                     <div key={index} className="grid grid-cols-12 gap-2 mb-2 items-end">
                                         <div className="col-span-6">
-                                            <input type="text" placeholder="Beschreibung" value={item.description} onChange={e => setData('items', data.items.map((it, i) => i === index ? { ...it, description: e.target.value } : it))} className="w-full border rounded px-3 py-2 text-sm" />
+                                            <input type="text" placeholder="Beschreibung" value={item.description} onChange={e => setData('items', data.items.map((it, i) => i === index ? { ...it, description: e.target.value } : it))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" />
                                         </div>
                                         <div className="col-span-2">
-                                            <input type="number" placeholder="Menge" value={item.quantity} onChange={e => setData('items', data.items.map((it, i) => i === index ? { ...it, quantity: parseFloat(e.target.value) } : it))} className="w-full border rounded px-3 py-2 text-sm" />
+                                            <input type="number" placeholder="Menge" value={item.quantity} onChange={e => setData('items', data.items.map((it, i) => i === index ? { ...it, quantity: parseFloat(e.target.value) } : it))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" />
                                         </div>
                                         <div className="col-span-2">
-                                            <input type="number" step="0.01" placeholder="Preis €" value={item.unit_price} onChange={e => setData('items', data.items.map((it, i) => i === index ? { ...it, unit_price: parseFloat(e.target.value) } : it))} className="w-full border rounded px-3 py-2 text-sm" />
+                                            <input type="number" step="0.01" placeholder="Preis €" value={item.unit_price} onChange={e => setData('items', data.items.map((it, i) => i === index ? { ...it, unit_price: parseFloat(e.target.value) } : it))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" />
                                         </div>
                                         <div className="col-span-2 flex items-center gap-2">
                                             <span className="text-sm font-medium">{(item.quantity * item.unit_price).toFixed(2)} €</span>
-                                            {data.items.length > 1 && <button type="button" onClick={() => removeItem(index)} className="text-red-500">✕</button>}
+                                            {data.items.length > 1 && <button type="button" onClick={() => removeItem(index)} className="text-red-500 hover:text-red-700 transition-colors">✕</button>}
                                         </div>
                                     </div>
                                 ))}
@@ -134,12 +162,12 @@ export default function QuotesIndex({ quotes, customers }) {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Notizen</label>
-                                <textarea value={data.notes} onChange={e => setData('notes', e.target.value)} rows={2} className="w-full border rounded-lg px-4 py-2" />
+                                <textarea value={data.notes} onChange={e => setData('notes', e.target.value)} rows={2} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" />
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">Abbrechen</button>
-                                <button type="submit" disabled={processing} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Speichern</button>
+                                <Button variant="secondary" onClick={() => setShowModal(false)}>Abbrechen</Button>
+                                <Button type="submit" disabled={processing}>Speichern</Button>
                             </div>
                         </form>
                     </div>

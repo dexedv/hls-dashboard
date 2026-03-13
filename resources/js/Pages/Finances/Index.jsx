@@ -1,5 +1,6 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link } from '@inertiajs/react';
+import PageHeader, { Button } from '@/Components/PageHeader';
 
 export default function FinanceIndex({ stats }) {
     const cards = [
@@ -29,30 +30,30 @@ export default function FinanceIndex({ stats }) {
         <DashboardLayout title="Finanzen">
             <Head title="Finanzen" />
 
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Finanzen</h1>
-                <p className="text-sm text-gray-500 mt-1">Übersicht über Ihre Finanzen</p>
-            </div>
+            <PageHeader
+                title="Finanzen"
+                subtitle="Übersicht über Ihre Finanzen"
+            />
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
                     <p className="text-sm font-medium text-gray-500">Gesamtumsatz</p>
                     <p className="text-2xl font-bold text-gray-900 mt-2">
                         {stats?.totalRevenue ? parseFloat(stats.totalRevenue).toLocaleString('de-DE') + ' €' : '0 €'}
                     </p>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
                     <p className="text-sm font-medium text-gray-500">Offene Beträge</p>
                     <p className="text-2xl font-bold text-amber-600 mt-2">
                         {stats?.pendingPayments ? parseFloat(stats.pendingPayments).toLocaleString('de-DE') + ' €' : '0 €'}
                     </p>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
                     <p className="text-sm font-medium text-gray-500">Bezahlte Rechnungen</p>
                     <p className="text-2xl font-bold text-green-600 mt-2">{stats?.paidInvoices || 0}</p>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
                     <p className="text-sm font-medium text-gray-500">Offene Rechnungen</p>
                     <p className="text-2xl font-bold text-blue-600 mt-2">{stats?.openInvoices || 0}</p>
                 </div>
@@ -64,7 +65,7 @@ export default function FinanceIndex({ stats }) {
                     <Link
                         key={card.title}
                         href={card.href}
-                        className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:border-primary-500 hover:shadow-md transition flex items-center gap-4"
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:border-primary-500 hover:shadow-lg transition-all duration-200 flex items-center gap-4"
                     >
                         {card.icon}
                         <div>

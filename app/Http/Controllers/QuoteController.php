@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Project;
 use App\Repositories\SupabaseRepository;
 use App\Helpers\SupabaseHelper;
+use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -36,6 +37,7 @@ class QuoteController extends Controller
             return Inertia::render('Quotes/Index', [
                 'quotes' => $quotes,
                 'filters' => $request->only(['search', 'status']),
+                'statuses' => StatusHelper::quoteStatuses(),
             ]);
         }
 
@@ -56,6 +58,7 @@ class QuoteController extends Controller
         return Inertia::render('Quotes/Index', [
             'quotes' => $quotes,
             'filters' => $request->only(['search', 'status']),
+            'statuses' => StatusHelper::quoteStatuses(),
         ]);
     }
 

@@ -1,9 +1,13 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 
 export default function PermissionsIndex({ roles, permissions, rolePermissions }) {
     const { auth } = usePage().props;
     const userPermissions = auth?.permissions || {};
+    const [selectedRole, setSelectedRole] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
     // Check if user can manage permissions
     const canManage = userPermissions['permissions.manage'];
@@ -18,17 +22,22 @@ export default function PermissionsIndex({ roles, permissions, rolePermissions }
 
     const permissionGroups = getPermissionGroups();
 
+    const openRoleModal = (slug, name) => {
+        setSelectedRole({ slug, name });
+        setShowModal(true);
+    };
+
     return (
         <DashboardLayout title="Berechtigungen">
             <Head title="Berechtigungen" />
 
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Berechtigungen</h1>
-                <p className="text-sm text-gray-500 mt-1">Verwalten Sie Rollen und Berechtigungen</p>
-            </div>
+            <PageHeader
+                title="Berechtigungen"
+                subtitle="Verwalten Sie Rollen und Berechtigungen"
+            />
 
             {/* Permission Matrix */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -38,7 +47,12 @@ export default function PermissionsIndex({ roles, permissions, rolePermissions }
                                 </th>
                                 {Object.entries(roles).map(([slug, name]) => (
                                     <th key={slug} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                                        {name}
+                                        <button
+                                            onClick={() => openRoleModal(slug, name)}
+                                            className="hover:text-primary-600 transition-colors"
+                                        >
+                                            {name}
+                                        </button>
                                     </th>
                                 ))}
                             </tr>
@@ -78,7 +92,7 @@ export default function PermissionsIndex({ roles, permissions, rolePermissions }
                                         </td>
                                     </tr>
                                     {perms.map((perm) => (
-                                        <tr key={perm.key} className="hover:bg-gray-50">
+                                        <tr key={perm.key} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-3 text-sm text-gray-900">
                                                 {perm.label}
                                             </td>
@@ -107,18 +121,106 @@ export default function PermissionsIndex({ roles, permissions, rolePermissions }
             </div>
 
             {/* Info Box */}
-            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-6">
+            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">Über Berechtigungen</h3>
                 <p className="text-sm text-blue-800">
                     Berechtigungen werden über Rollen verwaltet. Jede Rolle hat Standardberechtigungen,
                     die individuell angepasst werden können.
                 </p>
                 <ul className="mt-3 text-sm text-blue-800 space-y-1">
-                    <li>• Rollen definieren die Basis-Berechtigungen</li>
-                    <li>• Benutzer können individuelle overrides erhalten</li>
-                    <li>• Kritische Rechte sind farblich hervorgehoben</li>
+                    <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        Rollen definieren die Basis-Berechtigungen
+                    </li>
+                    <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        Benutzer können individuelle overrides erhalten
+                    </li>
+                    <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        Kritische Rechte sind farblich hervorgehoben
+                    </li>
                 </ul>
             </div>
+
+            {/* Role Detail Modal */}
+            {showModal && selectedRole && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+
+                        {/* Modal */}
+                        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-xl font-semibold text-gray-900">Rolle: {selectedRole.name}</h2>
+                                        <p className="text-sm text-gray-500 mt-1">Berechtigungsübersicht</p>
+                                    </div>
+                                    <IconButton onClick={() => setShowModal(false)}>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </IconButton>
+                                </div>
+
+                                <div className="space-y-2 max-h-80 overflow-y-auto">
+                                    {Object.entries(permissionGroups).map(([module, perms]) => {
+                                        const modulePerms = perms.filter(p => rolePermissions[selectedRole.slug]?.[p.key]);
+                                        if (modulePerms.length === 0) return null;
+
+                                        return (
+                                            <div key={module} className="border border-gray-100 rounded-lg p-3">
+                                                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                                                    {module === 'crm' && 'CRM / Kunden'}
+                                                    {module === 'leads' && 'Leads'}
+                                                    {module === 'projects' && 'Projekte'}
+                                                    {module === 'tasks' && 'Aufgaben'}
+                                                    {module === 'calendar' && 'Kalender'}
+                                                    {module === 'finances' && 'Finanzen'}
+                                                    {module === 'invoices' && 'Rechnungen'}
+                                                    {module === 'time_tracking' && 'Zeiterfassung'}
+                                                    {module === 'team' && 'Team'}
+                                                    {module === 'leave' && 'Urlaub'}
+                                                    {module === 'notes' && 'Notizen'}
+                                                    {module === 'inventory' && 'Inventar'}
+                                                    {module === 'wms' && 'Warenwirtschaft'}
+                                                    {module === 'barcode' && 'Barcode'}
+                                                    {module === 'statistics' && 'Statistiken'}
+                                                    {module === 'tickets' && 'Tickets'}
+                                                    {module === 'email' && 'E-Mail'}
+                                                    {module === 'users' && 'Benutzer'}
+                                                    {module === 'roles' && 'Rollen'}
+                                                    {module === 'labels' && 'Labels'}
+                                                    {module === 'settings' && 'Einstellungen'}
+                                                    {module === 'integrations' && 'Integrationen'}
+                                                    {module === 'audit_logs' && 'Audit Logs'}
+                                                    {module === 'system' && 'System'}
+                                                    {module === 'dashboard' && 'Dashboard'}
+                                                </h4>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {modulePerms.map(perm => (
+                                                        <span key={perm.key} className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">
+                                                            {perm.label}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-gray-100">
+                                    <Button variant="secondary" onClick={() => setShowModal(false)} className="w-full">
+                                        Schließen
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }

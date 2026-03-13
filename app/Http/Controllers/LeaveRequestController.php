@@ -6,6 +6,7 @@ use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Repositories\SupabaseRepository;
 use App\Helpers\SupabaseHelper;
+use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -31,6 +32,7 @@ class LeaveRequestController extends Controller
                 'leaveRequests' => $leaveRequests,
                 'users' => $users,
                 'filters' => $request->only(['status']),
+                'statuses' => StatusHelper::vacationStatuses(),
             ]);
         }
 
@@ -51,6 +53,7 @@ class LeaveRequestController extends Controller
             'leaveRequests' => $leaveRequests,
             'users' => $users,
             'filters' => $request->only(['status']),
+            'statuses' => StatusHelper::vacationStatuses(),
         ]);
     }
 

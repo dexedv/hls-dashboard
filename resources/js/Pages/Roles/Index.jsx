@@ -1,6 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import PageHeader, { Button } from '@/Components/PageHeader';
 
 export default function RolesIndex({ roles, permissions, rolePermissions }) {
     const { auth } = usePage().props;
@@ -57,7 +58,7 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
     };
 
     const handleReset = async () => {
-        if (!confirm('Möchten Sie diese Rolle wirklich auf die Standardwerte zurücksetzen?')) {
+        if (!confirm('Moechten Sie diese Rolle wirklich auf die Standardwerte zuruecksetzen?')) {
             return;
         }
 
@@ -73,7 +74,7 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
             });
 
             if (response.ok) {
-                alert('Rolle zurückgesetzt!');
+                alert('Rolle zuruecksetzt!');
                 window.location.reload();
             }
         } catch (error) {
@@ -89,10 +90,10 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
         <DashboardLayout title="Rollen & Berechtigungen">
             <Head title="Rollen & Berechtigungen" />
 
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Rollen & Berechtigungen</h1>
-                <p className="text-sm text-gray-500 mt-1">Verwalten Sie Rollen und weisen Sie Berechtigungen zu</p>
-            </div>
+            <PageHeader
+                title="Rollen & Berechtigungen"
+                subtitle="Verwalten Sie Rollen und weisen Sie Berechtigungen zu"
+            />
 
             {/* Role Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
@@ -100,14 +101,14 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
                     <button
                         key={slug}
                         onClick={() => setSelectedRole(slug)}
-                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
                             selectedRole === slug
                                 ? 'border-primary-500 bg-primary-50'
-                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                                : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
                         }`}
                     >
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-lg font-semibold">{name}</span>
+                            <span className="text-lg font-semibold text-gray-900">{name}</span>
                             <span className={`px-2 py-0.5 text-xs rounded-full ${roleColors[slug] || 'bg-gray-100'}`}>
                                 {slug}
                             </span>
@@ -120,34 +121,34 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
             </div>
 
             {/* Permission Editor */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                            Berechtigungen für: {roles[selectedRole]}
+                            Berechtigungen fuer: {roles[selectedRole]}
                         </h2>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 mt-1">
                             Klicken Sie auf die Berechtigungen, um sie zu aktivieren/deaktivieren
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <button
+                    <div className="flex gap-3">
+                        <Button
+                            variant="secondary"
                             onClick={handleReset}
-                            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                            disabled={saving}
                         >
-                            Zurücksetzen
-                        </button>
-                        <button
+                            Zuruecksetzen
+                        </Button>
+                        <Button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                         >
                             {saving ? 'Speichern...' : 'Speichern'}
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
-                <div className="p-4 max-h-[60vh] overflow-y-auto">
+                <div className="p-6 max-h-[60vh] overflow-y-auto">
                     {modules.map(([module, modulePermissions]) => (
                         <div key={module} className="mb-6 last:mb-0">
                             <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3 pb-2 border-b border-gray-100">
@@ -157,7 +158,7 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
                                 {Object.entries(modulePermissions).map(([key, label]) => (
                                     <label
                                         key={key}
-                                        className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                                        className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
                                             localPermissions[selectedRole]?.[key]
                                                 ? 'bg-green-50 hover:bg-green-100'
                                                 : 'bg-gray-50 hover:bg-gray-100'
@@ -185,14 +186,19 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
             </div>
 
             {/* Info Box */}
-            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
-                <h3 className="font-medium text-blue-900 mb-2">Hinweis zu Rollen</h3>
+            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="font-semibold text-blue-900">Hinweis zu Rollen</h3>
+                </div>
                 <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• <strong>Owner/Inhaber</strong> - Hat alle Berechtigungen, kann nicht gelöscht werden</li>
-                    <li>• <strong>Admin</strong> - Volle Administrationsrechte</li>
-                    <li>• <strong>Manager</strong> - Projekt- und Teamverwaltung</li>
-                    <li>• <strong>Employee/Mitarbeiter</strong> - Standard-Zugriff für Mitarbeiter</li>
-                    <li>• <strong>Guest/Gast</strong> - Eingeschränkter Zugriff</li>
+                    <li>- <strong>Owner/Inhaber</strong> - Hat alle Berechtigungen, kann nicht geloescht werden</li>
+                    <li>- <strong>Admin</strong> - Volle Administrationsrechte</li>
+                    <li>- <strong>Manager</strong> - Projekt- und Teamverwaltung</li>
+                    <li>- <strong>Employee/Mitarbeiter</strong> - Standard-Zugriff fuer Mitarbeiter</li>
+                    <li>- <strong>Guest/Gast</strong> - Eingeschraenkter Zugriff</li>
                 </ul>
             </div>
         </DashboardLayout>

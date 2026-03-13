@@ -116,6 +116,9 @@ Route::middleware('auth')->group(function () {
     Route::post('roles/permissions', [RoleController::class, 'updatePermissions'])->name('roles.updatePermissions');
     Route::post('roles/reset', [RoleController::class, 'resetRole'])->name('roles.reset');
     Route::get('labels', [LabelController::class, 'index'])->name('labels.index');
+    Route::post('labels', [LabelController::class, 'store'])->name('labels.store');
+    Route::put('labels/{id}', [LabelController::class, 'update'])->name('labels.update');
+    Route::delete('labels/{id}', [LabelController::class, 'destroy'])->name('labels.destroy');
     Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit_logs.index');
     Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
     Route::get('integrations', [SettingsController::class, 'integrations'])->name('integrations.index');

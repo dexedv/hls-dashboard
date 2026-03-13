@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\Customer;
 use App\Repositories\SupabaseRepository;
 use App\Helpers\SupabaseHelper;
+use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -36,6 +37,7 @@ class LeadController extends Controller
             return Inertia::render('Leads/Index', [
                 'leads' => $leads,
                 'filters' => $request->only(['search', 'status']),
+                'statuses' => StatusHelper::leadStatuses(),
             ]);
         }
 
@@ -59,6 +61,7 @@ class LeadController extends Controller
         return Inertia::render('Leads/Index', [
             'leads' => $leads,
             'filters' => $request->only(['search', 'status']),
+            'statuses' => StatusHelper::leadStatuses(),
         ]);
     }
 
@@ -120,12 +123,14 @@ class LeadController extends Controller
             $lead = SupabaseRepository::leads()->find($lead->id);
             return Inertia::render('Leads/Show', [
                 'lead' => $lead,
+                'statuses' => StatusHelper::leadStatuses(),
             ]);
         }
 
         $lead->load(['customer', 'creator']);
         return Inertia::render('Leads/Show', [
             'lead' => $lead,
+            'statuses' => StatusHelper::leadStatuses(),
         ]);
     }
 

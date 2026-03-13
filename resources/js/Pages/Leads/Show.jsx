@@ -1,7 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function LeadShow({ lead }) {
+export default function LeadShow({ lead, statuses = [] }) {
     const { post, processing } = useForm({});
 
     const handleConvert = (e) => {
@@ -11,22 +11,10 @@ export default function LeadShow({ lead }) {
         }
     };
 
-    const statusColors = {
-        new: 'bg-blue-100 text-blue-800',
-        contacted: 'bg-yellow-100 text-yellow-800',
-        qualified: 'bg-purple-100 text-purple-800',
-        proposal: 'bg-orange-100 text-orange-800',
-        won: 'bg-green-100 text-green-800',
-        lost: 'bg-red-100 text-red-800',
-    };
-
-    const statusLabels = {
-        new: 'Neu',
-        contacted: 'Kontaktiert',
-        qualified: 'Qualifiziert',
-        proposal: 'Angebot',
-        won: 'Gewonnen',
-        lost: 'Verloren',
+    // Dynamic status lookup from props
+    const getStatusInfo = (statusValue) => {
+        const status = statuses.find(s => s.value === statusValue);
+        return status ? { color: status.color, label: status.label } : { color: 'bg-gray-100 text-gray-800', label: statusValue };
     };
 
     return (
@@ -51,8 +39,8 @@ export default function LeadShow({ lead }) {
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-gray-900">{lead.name}</h1>
-                            <span className={`px-3 py-1 text-sm rounded-full ${statusColors[lead.status]}`}>
-                                {statusLabels[lead.status] || lead.status}
+                            <span className={`px-3 py-1 text-sm rounded-full ${getStatusInfo(lead.status).color}`}>
+                                {getStatusInfo(lead.status).label}
                             </span>
                         </div>
                         {lead.company && (
@@ -153,8 +141,8 @@ export default function LeadShow({ lead }) {
                             <div>
                                 <dt className="text-sm font-medium text-gray-500">Status</dt>
                                 <dd>
-                                    <span className={`px-2 py-1 text-sm rounded-full ${statusColors[lead.status]}`}>
-                                        {statusLabels[lead.status] || lead.status}
+                                    <span className={`px-2 py-1 text-sm rounded-full ${getStatusInfo(lead.status).color}`}>
+                                        {getStatusInfo(lead.status).label}
                                     </span>
                                 </dd>
                             </div>

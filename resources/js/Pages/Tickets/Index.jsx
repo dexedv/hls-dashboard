@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
+import SearchInput from '@/Components/SearchInput';
+import EmptyState from '@/Components/EmptyState';
+import StatusBadge from '@/Components/StatusBadge';
 
-export default function TicketsIndex({ tickets, filters }) {
+export default function TicketsIndex({ tickets, filters, statuses = [], priorities = [] }) {
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
@@ -13,6 +17,14 @@ export default function TicketsIndex({ tickets, filters }) {
     });
 
     const [showModal, setShowModal] = useState(false);
+    const [search, setSearch] = useState(filters?.search || '');
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        const url = new URL(route('tickets.index'));
+        if (search) url.searchParams.set('search', search);
+        window.location.href = url.toString();
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -24,27 +36,11 @@ export default function TicketsIndex({ tickets, filters }) {
         });
     };
 
-    const statusColors = {
-        open: 'bg-red-100 text-red-800',
-        in_progress: 'bg-blue-100 text-blue-800',
-        pending: 'bg-yellow-100 text-yellow-800',
-        resolved: 'bg-green-100 text-green-800',
-        closed: 'bg-gray-100 text-gray-800',
-    };
-
-    const statusLabels = {
-        open: 'Offen',
-        in_progress: 'In Bearbeitung',
-        pending: 'Wartend',
-        resolved: 'Gelöst',
-        closed: 'Geschlossen',
-    };
-
     const priorityColors = {
-        low: 'bg-gray-100 text-gray-800',
-        medium: 'bg-blue-100 text-blue-800',
-        high: 'bg-orange-100 text-orange-800',
-        urgent: 'bg-red-100 text-red-800',
+        low: 'bg-gray-100 text-gray-700 border-gray-200',
+        medium: 'bg-blue-100 text-blue-700 border-blue-200',
+        high: 'bg-orange-100 text-orange-700 border-orange-200',
+        urgent: 'bg-red-100 text-red-700 border-red-200',
     };
 
     const priorityLabels = {
@@ -57,58 +53,72 @@ export default function TicketsIndex({ tickets, filters }) {
     return (
         <DashboardLayout title="Tickets">
             <Head title="Tickets" />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Tickets</h1>
-                    <p className="text-sm text-gray-500 mt-1">Support-Tickets verwalten</p>
-                </div>
-                <button onClick={() => setShowModal(true)} className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    Neues Ticket
-                </button>
-            </div>
 
-            {/* Filters */}
-            <form method="get" className="mb-4 flex flex-wrap gap-2">
-                <input
-                    type="text"
-                    name="search"
-                    defaultValue={filters?.search || ''}
-                    placeholder="Suchen..."
-                    className="border rounded-lg px-4 py-2"
-                />
-                <select name="status" defaultValue={filters?.status || ''} className="border rounded-lg px-4 py-2">
-                    <option value="">Alle Status</option>
-                    <option value="open">Offen</option>
-                    <option value="in_progress">In Bearbeitung</option>
-                    <option value="pending">Wartend</option>
-                    <option value="resolved">Gelöst</option>
-                    <option value="closed">Geschlossen</option>
-                </select>
-                <select name="priority" defaultValue={filters?.priority || ''} className="border rounded-lg px-4 py-2">
-                    <option value="">Alle Prioritäten</option>
-                    <option value="low">Niedrig</option>
-                    <option value="medium">Mittel</option>
-                    <option value="high">Hoch</option>
-                    <option value="urgent">Dringend</option>
-                </select>
-                <button type="submit" className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200">Filtern</button>
-            </form>
+            {/* Page Header */}
+            <PageHeader
+                title="Tickets"
+                subtitle="Support-Tickets verwalten"
+                actions={
+                    <Button onClick={() => setShowModal(true)}>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Neues Ticket
+                    </Button>
+                }
+            >
+                {/* Filters */}
+                <form method="get" className="mt-4 flex flex-wrap gap-3">
+                    <div className="flex-1 min-w-[200px]">
+                        <SearchInput
+                            value={search}
+                            onChange={setSearch}
+                            onSubmit={handleSearch}
+                            placeholder="Tickets suchen..."
+                        />
+                    </div>
+                    <select name="status" defaultValue={filters?.status || ''} className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                        <option value="">Alle Status</option>
+                        <option value="open">Offen</option>
+                        <option value="in_progress">In Bearbeitung</option>
+                        <option value="pending">Wartend</option>
+                        <option value="resolved">Gelöst</option>
+                        <option value="closed">Geschlossen</option>
+                    </select>
+                    <select name="priority" defaultValue={filters?.priority || ''} className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                        <option value="">Alle Prioritäten</option>
+                        <option value="low">Niedrig</option>
+                        <option value="medium">Mittel</option>
+                        <option value="high">Hoch</option>
+                        <option value="urgent">Dringend</option>
+                    </select>
+                    <Button type="submit" variant="secondary">
+                        Filtern
+                    </Button>
+                </form>
+            </PageHeader>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 {tickets.data.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500"><p>Noch keine Tickets vorhanden</p></div>
+                    <EmptyState
+                        title="Noch keine Tickets vorhanden"
+                        description="Erstellen Sie Ihr erstes Ticket, um loszulegen."
+                        actionLabel="Erstes Ticket anlegen"
+                        onAction={() => setShowModal(true)}
+                    />
                 ) : (
                     <div className="divide-y divide-gray-100">
                         {tickets.data.map((ticket) => (
-                            <div key={ticket.id} className="p-4 hover:bg-gray-50">
+                            <div key={ticket.id} className="p-4 hover:bg-gray-50 transition-colors duration-150 rounded-xl mx-1 my-1">
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Link href={route('tickets.show', ticket.id)} className="font-medium text-gray-900 hover:text-primary-600">
+                                            <Link href={route('tickets.show', ticket.id)} className="font-medium text-gray-900 hover:text-primary-600 transition-colors">
                                                 #{ticket.id} {ticket.title}
                                             </Link>
-                                            <span className={`px-2 py-0.5 text-xs rounded-full ${priorityColors[ticket.priority]}`}>{priorityLabels[ticket.priority] || ticket.priority}</span>
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${priorityColors[ticket.priority] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                                                {priorityLabels[ticket.priority] || ticket.priority}
+                                            </span>
                                         </div>
                                         <p className="text-sm text-gray-500 line-clamp-1">{ticket.description}</p>
                                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
@@ -118,7 +128,7 @@ export default function TicketsIndex({ tickets, filters }) {
                                             <span>{new Date(ticket.created_at).toLocaleDateString('de-DE')}</span>
                                         </div>
                                     </div>
-                                    <span className={`px-2 py-1 text-xs rounded-full ${statusColors[ticket.status]}`}>{statusLabels[ticket.status] || ticket.status}</span>
+                                    <StatusBadge status={ticket.status} statuses={statuses} />
                                 </div>
                             </div>
                         ))}
@@ -133,7 +143,7 @@ export default function TicketsIndex({ tickets, filters }) {
                         <Link
                             key={index}
                             href={link.url || '#'}
-                            className={`px-3 py-1 rounded ${link.active ? 'bg-primary-600 text-white' : 'bg-white border'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`px-3 py-1 rounded-xl text-sm transition-colors ${link.active ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 hover:bg-gray-50'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
                             dangerouslySetInnerHTML={{ __html: link.label }}
                         />
                     ))}
@@ -142,45 +152,49 @@ export default function TicketsIndex({ tickets, filters }) {
 
             {/* Create Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-                        <div className="flex items-center justify-between p-6 border-b">
-                            <h2 className="text-xl font-semibold">Neues Ticket</h2>
-                            <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-gray-100">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <h2 className="text-xl font-semibold text-gray-900">Neues Ticket</h2>
+                            <IconButton onClick={() => setShowModal(false)}>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </IconButton>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm mb-1">Titel *</label>
-                                <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="w-full border rounded-lg px-4 py-2" required />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+                                <input type="text" value={data.title} onChange={e => setData('title', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" required />
                             </div>
                             <div>
-                                <label className="block text-sm mb-1">Beschreibung</label>
-                                <textarea value={data.description} onChange={e => setData('description', e.target.value)} rows={3} className="w-full border rounded-lg px-4 py-2" />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+                                <textarea value={data.description} onChange={e => setData('description', e.target.value)} rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm mb-1">Kunde</label>
-                                    <select value={data.customer_id} onChange={e => setData('customer_id', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
+                                    <select value={data.customer_id} onChange={e => setData('customer_id', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                         <option value="">Kein Kunde</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm mb-1">Projekt</label>
-                                    <select value={data.project_id} onChange={e => setData('project_id', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Projekt</label>
+                                    <select value={data.project_id} onChange={e => setData('project_id', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                         <option value="">Kein Projekt</option>
                                     </select>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm mb-1">Zugewiesen an</label>
-                                    <select value={data.assigned_to} onChange={e => setData('assigned_to', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Zugewiesen an</label>
+                                    <select value={data.assigned_to} onChange={e => setData('assigned_to', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                         <option value="">Nicht zugewiesen</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm mb-1">Priorität</label>
-                                    <select value={data.priority} onChange={e => setData('priority', e.target.value)} className="w-full border rounded-lg px-4 py-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Priorität</label>
+                                    <select value={data.priority} onChange={e => setData('priority', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                                         <option value="low">Niedrig</option>
                                         <option value="medium">Mittel</option>
                                         <option value="high">Hoch</option>
@@ -189,8 +203,12 @@ export default function TicketsIndex({ tickets, filters }) {
                                 </div>
                             </div>
                             <div className="flex gap-3 justify-end mt-6">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">Abbrechen</button>
-                                <button type="submit" disabled={processing} className="px-4 py-2 bg-primary-600 text-white rounded-lg">Erstellen</button>
+                                <Button variant="secondary" type="button" onClick={() => setShowModal(false)}>
+                                    Abbrechen
+                                </Button>
+                                <Button type="submit" disabled={processing}>
+                                    Erstellen
+                                </Button>
                             </div>
                         </form>
                     </div>

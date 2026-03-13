@@ -1,6 +1,8 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import PageHeader, { Button } from '@/Components/PageHeader';
+import EmptyState from '@/Components/EmptyState';
 
 export default function EmailIndex({ account, folders = [], currentFolder = null, emails = null }) {
     const [syncing, setSyncing] = useState(false);
@@ -27,19 +29,18 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
             <DashboardLayout title="E-Mail">
                 <Head title="E-Mail" />
 
-                <div className="max-w-2xl mx-auto text-center py-12">
-                    <div className="text-6xl mb-6">📧</div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">E-Mail einrichten</h1>
-                    <p className="text-gray-500 mb-6">
-                        Richten Sie Ihr E-Mail-Konto ein, um E-Mails direkt im Dashboard zu lesen und zu senden.
-                        Ihre Daten werden verschlüsselt und sind nur für Sie sichtbar.
-                    </p>
-                    <Link
-                        href="/email/settings"
-                        className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                    >
-                        E-Mail-Konto einrichten
-                    </Link>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <EmptyState
+                        icon={
+                            <svg className="w-10 h-10 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        }
+                        title="E-Mail einrichten"
+                        description="Richten Sie Ihr E-Mail-Konto ein, um E-Mails direkt im Dashboard zu lesen und zu senden. Ihre Daten werden verschlüsselt und sind nur für Sie sichtbar."
+                        actionLabel="E-Mail-Konto einrichten"
+                        onAction={() => window.location.href = '/email/settings'}
+                    />
                 </div>
             </DashboardLayout>
         );
@@ -49,11 +50,11 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
         <DashboardLayout title="E-Mail">
             <Head title="E-Mail" />
 
-            <div className="flex h-[calc(100vh-140px)]">
+            <div className="flex h-[calc(100vh-140px)] bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 {/* Sidebar */}
-                <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+                <div className="w-64 border-r border-gray-100 flex flex-col">
                     {/* Account info */}
-                    <div className="p-4 border-b border-gray-200">
+                    <div className="p-4 border-b border-gray-100">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                                 <span className="text-primary-600 font-medium">
@@ -65,7 +66,7 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
                                 <button
                                     onClick={handleSync}
                                     disabled={syncing}
-                                    className="text-xs text-primary-600 hover:text-primary-700"
+                                    className="text-xs text-primary-600 hover:text-primary-700 transition-colors"
                                 >
                                     {syncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
                                 </button>
@@ -79,7 +80,7 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
                             <Link
                                 key={folder.id}
                                 href={`/email/folder/${folder.id}`}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                                     currentFolder?.id === folder.id
                                         ? 'bg-primary-50 text-primary-700'
                                         : 'text-gray-700 hover:bg-gray-100'
@@ -114,11 +115,11 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
                 </div>
 
                 {/* Email List */}
-                <div className="flex-1 flex flex-col bg-white">
+                <div className="flex-1 flex flex-col">
                     {currentFolder ? (
                         <>
                             {/* Header */}
-                            <div className="p-4 border-b border-gray-200">
+                            <div className="p-4 border-b border-gray-100">
                                 <h2 className="text-lg font-semibold text-gray-900">{currentFolder.name}</h2>
                             </div>
 
@@ -130,8 +131,8 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
                                             <Link
                                                 key={email.id}
                                                 href={`/email/${email.id}`}
-                                                className={`flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 ${
-                                                    !email.is_read ? 'bg-blue-50' : ''
+                                                className={`flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                                                    !email.is_read ? 'bg-blue-50 hover:bg-blue-100' : ''
                                                 }`}
                                             >
                                                 <div className="flex-1 min-w-0">

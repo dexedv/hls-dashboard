@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
+import SearchInput from '@/Components/SearchInput';
+import EmptyState from '@/Components/EmptyState';
+import StatusBadge from '@/Components/StatusBadge';
 
-export default function TasksIndex({ tasks, filters, projects }) {
+export default function TasksIndex({ tasks, filters, projects, statuses = [], priorities = [] }) {
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
@@ -33,22 +37,8 @@ export default function TasksIndex({ tasks, filters, projects }) {
         });
     };
 
-    const statusColors = {
-        todo: 'bg-gray-100 text-gray-800',
-        in_progress: 'bg-blue-100 text-blue-800',
-        review: 'bg-yellow-100 text-yellow-800',
-        done: 'bg-green-100 text-green-800',
-    };
-
-    const statusLabels = {
-        todo: 'Offen',
-        in_progress: 'In Bearbeitung',
-        review: 'Überprüfung',
-        done: 'Erledigt',
-    };
-
-    const priorityColors = {
-        low: 'text-gray-500',
+    const priorityIcons = {
+        low: 'text-gray-400',
         medium: 'text-yellow-500',
         high: 'text-orange-500',
         urgent: 'text-red-500',
@@ -66,69 +56,44 @@ export default function TasksIndex({ tasks, filters, projects }) {
             <Head title="Aufgaben" />
 
             {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Aufgaben</h1>
-                    <p className="text-sm text-gray-500 mt-1">Verwalten Sie Ihre Aufgaben</p>
+            <PageHeader
+                title="Aufgaben"
+                subtitle="Verwalten Sie Ihre Aufgaben"
+                actions={
+                    <Button onClick={() => setShowModal(true)}>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Neue Aufgabe
+                    </Button>
+                }
+            >
+                <div className="mt-4">
+                    <SearchInput
+                        value={search}
+                        onChange={setSearch}
+                        onSubmit={handleSearch}
+                        placeholder="Aufgaben suchen..."
+                    />
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
-                >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Neue Aufgabe
-                </button>
-            </div>
-
-            {/* Search & Filters */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
-                <div className="p-4">
-                    <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <input
-                                type="text"
-                                placeholder="Aufgaben suchen..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-                        >
-                            Suchen
-                        </button>
-                    </form>
-                </div>
-            </div>
+            </PageHeader>
 
             {/* Tasks List */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 {tasks.data.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">
-                        <div className="flex flex-col items-center">
-                            <svg className="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <p>Noch keine Aufgaben vorhanden</p>
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="mt-2 text-primary-600 hover:text-primary-700"
-                            >
-                                Erste Aufgabe anlegen
-                            </button>
-                        </div>
-                    </div>
+                    <EmptyState
+                        title="Noch keine Aufgaben vorhanden"
+                        description="Erstellen Sie Ihre erste Aufgabe, um loszulegen."
+                        actionLabel="Erste Aufgabe anlegen"
+                        onAction={() => setShowModal(true)}
+                    />
                 ) : (
                     <div className="divide-y divide-gray-100">
                         {tasks.data.map((task) => (
                             <Link
                                 key={task.id}
                                 href={route('tasks.show', task.id)}
-                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition"
+                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-150 rounded-xl mx-1 my-1"
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`h-3 w-3 rounded-full ${
@@ -145,15 +110,13 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className={`text-xs ${priorityColors[task.priority]}`}>
+                                    <span className={`text-xs ${priorityIcons[task.priority]}`}>
                                         {task.priority === 'urgent' && '●●●'}
                                         {task.priority === 'high' && '●●○'}
                                         {task.priority === 'medium' && '●○○'}
                                         {task.priority === 'low' && '○○○'}
                                     </span>
-                                    <span className={`px-2 py-1 text-xs rounded-full ${statusColors[task.status]}`}>
-                                        {statusLabels[task.status] || task.status}
-                                    </span>
+                                    <StatusBadge status={task.status} statuses={statuses} />
                                     {task.due_date && (
                                         <span className="text-sm text-gray-500">
                                             {new Date(task.due_date).toLocaleDateString('de-DE')}
@@ -178,7 +141,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                         key={index}
                                         onClick={() => link.url && (window.location.href = link.url)}
                                         disabled={!link.url}
-                                        className={`px-3 py-1 rounded-lg text-sm ${
+                                        className={`px-3 py-1 rounded-xl text-sm transition-colors ${
                                             link.active
                                                 ? 'bg-primary-600 text-white'
                                                 : link.url
@@ -196,18 +159,15 @@ export default function TasksIndex({ tasks, filters, projects }) {
 
             {/* Create Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-gray-100">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-semibold text-gray-900">Neue Aufgabe</h2>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-                            >
+                            <IconButton onClick={() => setShowModal(false)}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                            </button>
+                            </IconButton>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6">
                             <div className="space-y-4">
@@ -217,7 +177,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                         type="text"
                                         value={data.title}
                                         onChange={(e) => setData('title', e.target.value)}
-                                        className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -226,7 +186,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                     <textarea
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
-                                        className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         rows={3}
                                     />
                                 </div>
@@ -236,7 +196,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                         <select
                                             value={data.status}
                                             onChange={(e) => setData('status', e.target.value)}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         >
                                             <option value="todo">Offen</option>
                                             <option value="in_progress">In Bearbeitung</option>
@@ -249,7 +209,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                         <select
                                             value={data.priority}
                                             onChange={(e) => setData('priority', e.target.value)}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         >
                                             <option value="low">Niedrig</option>
                                             <option value="medium">Mittel</option>
@@ -264,7 +224,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                         <select
                                             value={data.project_id}
                                             onChange={(e) => setData('project_id', e.target.value)}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         >
                                             <option value="">Kein Projekt</option>
                                             {projects && projects.map((project) => (
@@ -279,7 +239,7 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                         <select
                                             value={data.assigned_to}
                                             onChange={(e) => setData('assigned_to', e.target.value)}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         >
                                             <option value="">Nicht zugewiesen</option>
                                         </select>
@@ -292,26 +252,18 @@ export default function TasksIndex({ tasks, filters, projects }) {
                                             type="date"
                                             value={data.due_date}
                                             onChange={(e) => setData('due_date', e.target.value)}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         />
                                     </div>
                                 </div>
                             </div>
                             <div className="flex gap-3 justify-end mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
-                                >
+                                <Button variant="secondary" type="button" onClick={() => setShowModal(false)}>
                                     Abbrechen
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-                                >
+                                </Button>
+                                <Button type="submit" disabled={processing}>
                                     Speichern
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

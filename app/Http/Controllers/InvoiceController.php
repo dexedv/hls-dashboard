@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Project;
 use App\Repositories\SupabaseRepository;
 use App\Helpers\SupabaseHelper;
+use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -36,6 +37,7 @@ class InvoiceController extends Controller
             return Inertia::render('Invoices/Index', [
                 'invoices' => $invoices,
                 'filters' => $request->only(['search', 'status']),
+                'statuses' => StatusHelper::invoiceStatuses(),
             ]);
         }
 
@@ -56,6 +58,7 @@ class InvoiceController extends Controller
         return Inertia::render('Invoices/Index', [
             'invoices' => $invoices,
             'filters' => $request->only(['search', 'status']),
+            'statuses' => StatusHelper::invoiceStatuses(),
         ]);
     }
 

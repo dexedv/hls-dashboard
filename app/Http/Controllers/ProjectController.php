@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Customer;
 use App\Repositories\SupabaseRepository;
 use App\Helpers\SupabaseHelper;
+use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -37,6 +38,8 @@ class ProjectController extends Controller
                 'projects' => $projects,
                 'customers' => $customers,
                 'filters' => $request->only(['search', 'status']),
+                'statuses' => StatusHelper::projectStatuses(),
+                'priorities' => StatusHelper::priorities(),
             ]);
         }
 
@@ -62,6 +65,8 @@ class ProjectController extends Controller
             'projects' => $projects,
             'customers' => $customers,
             'filters' => $request->only(['search', 'status']),
+            'statuses' => StatusHelper::projectStatuses(),
+            'priorities' => StatusHelper::priorities(),
         ]);
     }
 
@@ -127,12 +132,16 @@ class ProjectController extends Controller
             }
             return Inertia::render('Projects/Show', [
                 'project' => $project,
+                'statuses' => StatusHelper::projectStatuses(),
+                'priorities' => StatusHelper::priorities(),
             ]);
         }
 
         $project = Project::with(['customer', 'tasks', 'timeEntries', 'creator'])->findOrFail($id);
         return Inertia::render('Projects/Show', [
             'project' => $project,
+            'statuses' => StatusHelper::projectStatuses(),
+            'priorities' => StatusHelper::priorities(),
         ]);
     }
 

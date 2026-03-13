@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Repositories\SupabaseRepository;
 use App\Helpers\SupabaseHelper;
+use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -43,6 +44,8 @@ class TaskController extends Controller
                 'tasks' => $tasks,
                 'filters' => $request->only(['search', 'status', 'project_id']),
                 'projects' => $projects,
+                'statuses' => StatusHelper::taskStatuses(),
+                'priorities' => StatusHelper::priorities(),
             ]);
         }
 
@@ -73,6 +76,8 @@ class TaskController extends Controller
             'tasks' => $tasks,
             'filters' => $request->only(['search', 'status', 'project_id']),
             'projects' => $projects,
+            'statuses' => StatusHelper::taskStatuses(),
+            'priorities' => StatusHelper::priorities(),
         ]);
     }
 

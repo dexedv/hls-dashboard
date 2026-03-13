@@ -102,6 +102,10 @@ export default function TeamEdit({ user, labels }) {
                                 <option value="manager">Manager</option>
                                 <option value="admin">Administrator</option>
                                 <option value="viewer">Betrachter</option>
+                                <option value="support">Support</option>
+                                <option value="finance">Finanzen</option>
+                                <option value="sales">Vertrieb</option>
+                                <option value="guest">Gast</option>
                             </select>
                         </div>
                     </div>

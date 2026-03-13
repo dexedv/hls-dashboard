@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Drop and recreate labels table with auto-increment ID
+        Schema::dropIfExists('user_labels');
+        Schema::dropIfExists('labels');
+
         Schema::create('labels', function (Blueprint $table) {
             $table->id();
             $table->string('name');

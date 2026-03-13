@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, useForm } from '@inertiajs/react';
+import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
+import SearchInput from '@/Components/SearchInput';
 
 export default function CalendarIndex({ events, projects }) {
+    const [searchQuery, setSearchQuery] = useState('');
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
@@ -45,7 +48,12 @@ export default function CalendarIndex({ events, projects }) {
     };
 
     const days = getDaysInMonth(currentDate);
-    const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    const monthNames = new Intl.DateTimeFormat('de-DE', { month: 'long' }).formatToParts().filter(p => p.type === 'month').map((_, i) =>
+        new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(new Date(2000, i, 1))
+    );
+    const dayNames = Array.from({ length: 7 }, (_, i) =>
+        new Intl.DateTimeFormat('de-DE', { weekday: 'short' }).format(new Date(2024, 0, i))
+    );
 
     const getEventsForDay = (day) => {
         if (!day) return [];
@@ -67,44 +75,48 @@ export default function CalendarIndex({ events, projects }) {
         <DashboardLayout title="Kalender">
             <Head title="Kalender" />
 
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Kalender</h1>
-                    <p className="text-sm text-gray-500 mt-1">Verwalten Sie Ihre Termine und Events</p>
+            <PageHeader
+                title="Kalender"
+                subtitle="Verwalten Sie Ihre Termine und Events"
+                actions={
+                    <Button onClick={() => setShowModal(true)}>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Neuer Termin
+                    </Button>
+                }
+            >
+                <div className="mt-4">
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Termine suchen..."
+                    />
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
-                >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Neuer Termin
-                </button>
-            </div>
+            </PageHeader>
 
             {/* Calendar */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-900">
-                        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        {new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(currentDate)}
                     </h2>
                     <div className="flex gap-2">
-                        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <IconButton onClick={prevMonth}>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                        </button>
-                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-sm hover:bg-gray-100 rounded-lg">
+                        </IconButton>
+                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                             Heute
                         </button>
-                        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <IconButton onClick={nextMonth}>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
-                        </button>
+                        </IconButton>
                     </div>
                 </div>
 
@@ -112,7 +124,7 @@ export default function CalendarIndex({ events, projects }) {
                 <div className="p-4">
                     {/* Day Names */}
                     <div className="grid grid-cols-7 gap-1 mb-2">
-                        {['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'].map(day => (
+                        {dayNames.map(day => (
                             <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
                                 {day}
                             </div>
@@ -126,7 +138,7 @@ export default function CalendarIndex({ events, projects }) {
                             const isToday = day && day.toDateString() === new Date().toDateString();
 
                             return (
-                                <div key={index} className={`min-h-[100px] border rounded-lg p-1 ${day ? 'bg-white' : 'bg-gray-50'} ${isToday ? 'border-primary-500' : 'border-gray-100'}`}>
+                                <div key={index} className={`min-h-[100px] border rounded-xl p-1 ${day ? 'bg-white hover:shadow-md' : 'bg-gray-50'} ${isToday ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-100'} transition-shadow`}>
                                     {day && (
                                         <>
                                             <div className={`text-sm font-medium mb-1 ${isToday ? 'text-primary-600' : 'text-gray-700'}`}>
@@ -153,15 +165,15 @@ export default function CalendarIndex({ events, projects }) {
 
             {/* Create Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-semibold text-gray-900">Neuer Termin</h2>
-                            <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                            <IconButton onClick={() => setShowModal(false)}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                            </button>
+                            </IconButton>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6">
                             <div className="space-y-4">
@@ -191,8 +203,8 @@ export default function CalendarIndex({ events, projects }) {
                                 </div>
                             </div>
                             <div className="flex gap-3 justify-end mt-6">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50">Abbrechen</button>
-                                <button type="submit" disabled={processing} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Speichern</button>
+                                <Button variant="secondary" type="button" onClick={() => setShowModal(false)}>Abbrechen</Button>
+                                <Button type="submit" disabled={processing}>Speichern</Button>
                             </div>
                         </form>
                     </div>
