@@ -30,6 +30,21 @@ class TeamController extends Controller
         }
 
         if (!$useSupabase) {
+            // Create default labels if none exist
+            $localLabels = Label::all();
+            if ($localLabels->isEmpty()) {
+                $defaultLabels = [
+                    ['name' => 'Außendienst', 'slug' => 'aussendienst', 'color' => '#10b981'],
+                    ['name' => 'Innendienst', 'slug' => 'innendienst', 'color' => '#3b82f6'],
+                    ['name' => 'Techniker', 'slug' => 'techniker', 'color' => '#f59e0b'],
+                    ['name' => 'Vertrieb', 'slug' => 'vertrieb', 'color' => '#8b5cf6'],
+                    ['name' => 'Support', 'slug' => 'support', 'color' => '#ec4899'],
+                    ['name' => 'Verwaltung', 'slug' => 'verwaltung', 'color' => '#6b7280'],
+                ];
+                foreach ($defaultLabels as $labelData) {
+                    Label::firstOrCreate(['slug' => $labelData['slug']], $labelData);
+                }
+            }
             $labels = Label::all()->toArray();
         }
 
@@ -76,7 +91,26 @@ class TeamController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Team/Create');
+        // Create default labels if none exist
+        $labels = Label::all();
+        if ($labels->isEmpty()) {
+            $defaultLabels = [
+                ['name' => 'Außendienst', 'slug' => 'aussendienst', 'color' => '#10b981'],
+                ['name' => 'Innendienst', 'slug' => 'innendienst', 'color' => '#3b82f6'],
+                ['name' => 'Techniker', 'slug' => 'techniker', 'color' => '#f59e0b'],
+                ['name' => 'Vertrieb', 'slug' => 'vertrieb', 'color' => '#8b5cf6'],
+                ['name' => 'Support', 'slug' => 'support', 'color' => '#ec4899'],
+                ['name' => 'Verwaltung', 'slug' => 'verwaltung', 'color' => '#6b7280'],
+            ];
+            foreach ($defaultLabels as $labelData) {
+                Label::firstOrCreate(['slug' => $labelData['slug']], $labelData);
+            }
+            $labels = Label::all();
+        }
+
+        return Inertia::render('Team/Create', [
+            'labels' => $labels,
+        ]);
     }
 
     /**
@@ -161,8 +195,23 @@ class TeamController extends Controller
         // Get user with labels
         $user = User::with('labels')->findOrFail($id);
 
-        // Get all available labels
+        // Get all available labels, create default labels if none exist
         $labels = Label::all();
+        if ($labels->isEmpty()) {
+            // Create default labels automatically
+            $defaultLabels = [
+                ['name' => 'Außendienst', 'slug' => 'aussendienst', 'color' => '#10b981'],
+                ['name' => 'Innendienst', 'slug' => 'innendienst', 'color' => '#3b82f6'],
+                ['name' => 'Techniker', 'slug' => 'techniker', 'color' => '#f59e0b'],
+                ['name' => 'Vertrieb', 'slug' => 'vertrieb', 'color' => '#8b5cf6'],
+                ['name' => 'Support', 'slug' => 'support', 'color' => '#ec4899'],
+                ['name' => 'Verwaltung', 'slug' => 'verwaltung', 'color' => '#6b7280'],
+            ];
+            foreach ($defaultLabels as $labelData) {
+                Label::firstOrCreate(['slug' => $labelData['slug']], $labelData);
+            }
+            $labels = Label::all();
+        }
 
         return Inertia::render('Team/Edit', [
             'user' => $user,

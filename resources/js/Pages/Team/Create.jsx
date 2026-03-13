@@ -1,7 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
 
-export default function Create() {
+export default function Create({ labels = [] }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
@@ -11,6 +11,7 @@ export default function Create() {
         position: '',
         hire_date: '',
         hourly_rate: '',
+        labels: [],
     });
 
     const handleSubmit = (e) => {
@@ -86,9 +87,10 @@ export default function Create() {
                                 onChange={(e) => setData('role', e.target.value)}
                                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
                             >
-                                <option value="employee">Mitarbeiter</option>
-                                <option value="manager">Manager</option>
+                                <option value="owner">Inhaber</option>
                                 <option value="admin">Administrator</option>
+                                <option value="manager">Manager</option>
+                                <option value="employee">Mitarbeiter</option>
                                 <option value="viewer">Betrachter</option>
                                 <option value="support">Support</option>
                                 <option value="finance">Finanzen</option>
@@ -137,6 +139,36 @@ export default function Create() {
                             />
                         </div>
                     </div>
+
+                    {labels && labels.length > 0 && (
+                        <div className="mt-6 pt-6 border-t border-gray-100">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Labels</label>
+                            <div className="flex flex-wrap gap-3">
+                                {labels.map((label) => (
+                                    <label key={label.id} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.labels.includes(label.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setData('labels', [...data.labels, label.id]);
+                                                } else {
+                                                    setData('labels', data.labels.filter(id => id !== label.id));
+                                                }
+                                            }}
+                                            className="rounded border-gray-300"
+                                        />
+                                        <span
+                                            className="px-3 py-1 text-sm rounded-full"
+                                            style={{ backgroundColor: label.color + '20', color: label.color }}
+                                        >
+                                            {label.name}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </form>
         </DashboardLayout>
