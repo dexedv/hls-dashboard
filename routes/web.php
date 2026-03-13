@@ -153,18 +153,14 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
         Route::post('quotes/sync-all', [LexwareController::class, 'syncAllQuotes'])->name('lexware.quotes.syncAll');
         Route::post('quotes/{quote}/sync', [LexwareController::class, 'syncQuote'])->name('lexware.quotes.sync');
 
-        // Chat routes - moved outside group
+        // Chat routes
+        Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/users', [ChatController::class, 'users'])->name('chat.users');
+        Route::get('/chat/conversation/{userId}', [ChatController::class, 'conversation'])->name('chat.conversation');
+        Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
+        Route::get('/chat/unread', [ChatController::class, 'unread'])->name('chat.unread');
+        Route::get('/chat/setup', [ChatController::class, 'setup'])->name('chat.setup');
     });
-});
-
-// Chat routes outside the group to avoid caching issues
-Route::middleware(['auth', 'verified', 'installed'])->group(function () {
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-    Route::get('/chat/users', [ChatController::class, 'users'])->name('chat.users');
-    Route::get('/chat/conversation/{userId}', [ChatController::class, 'conversation'])->name('chat.conversation');
-    Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
-    Route::get('/chat/unread', [ChatController::class, 'unread'])->name('chat.unread');
-    Route::get('/chat/setup', [ChatController::class, 'setup'])->name('chat.setup');
 });
 
 require __DIR__.'/auth.php';
