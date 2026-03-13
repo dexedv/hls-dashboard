@@ -17,7 +17,7 @@ chmod -R 775 bootstrap/cache
 # Remove cached files that might cause issues
 rm -f bootstrap/cache/*.php
 
-composer install --optimize-autoloader --no-dev
+composer install --optimize-autoloader --no-dev --ignore-platform-req=php
 
 php artisan config:clear
 php artisan route:clear
