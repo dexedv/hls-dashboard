@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class ChatController extends Controller
 {
@@ -23,19 +24,42 @@ class ChatController extends Controller
             return;
         }
 
-        // Create table if not exists
-        if (!Schema::hasTable('chat_messages')) {
-            Schema::create('chat_messages', function ($table) {
-                $table->id();
-                $table->unsignedBigInteger('sender_id');
-                $table->unsignedBigInteger('receiver_id');
-                $table->text('message');
-                $table->boolean('is_read')->default(false);
-                $table->timestamps();
+        // Create table if not exists using raw SQL
+        try {
+            $dbDriver = config('database.default');
 
-                $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
-                $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
-            });
+            if ($dbDriver === 'mysql') {
+                DB::statement("
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        sender_id BIGINT UNSIGNED NOT NULL,
+                        receiver_id BIGINT UNSIGNED NOT NULL,
+                        message TEXT NOT NULL,
+                        is_read TINYINT(1) DEFAULT 0,
+                        created_at TIMESTAMP NULL,
+                        updated_at TIMESTAMP NULL,
+                        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                ");
+            } else {
+                // SQLite or other
+                DB::statement("
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        sender_id INTEGER NOT NULL,
+                        receiver_id INTEGER NOT NULL,
+                        message TEXT NOT NULL,
+                        is_read INTEGER DEFAULT 0,
+                        created_at DATETIME,
+                        updated_at DATETIME,
+                        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                ");
+            }
+        } catch (\Exception $e) {
+            \Log::error('Chat table creation error: ' . $e->getMessage());
         }
     }
 
