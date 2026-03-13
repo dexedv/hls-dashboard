@@ -24,24 +24,51 @@ class ChatController extends Controller
             return;
         }
 
+        // Check if table already exists using Schema
+        try {
+            if (Schema::hasTable('chat_messages')) {
+                return; // Table already exists
+            }
+        } catch (\Exception $e) {
+            \Log::error('Chat table check error: ' . $e->getMessage());
+        }
+
         // Create table if not exists using raw SQL
         try {
             $dbDriver = config('database.default');
 
             if ($dbDriver === 'mysql') {
-                DB::statement("
-                    CREATE TABLE IF NOT EXISTS chat_messages (
-                        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                        sender_id BIGINT UNSIGNED NOT NULL,
-                        receiver_id BIGINT UNSIGNED NOT NULL,
-                        message TEXT NOT NULL,
-                        is_read TINYINT(1) DEFAULT 0,
-                        created_at TIMESTAMP NULL,
-                        updated_at TIMESTAMP NULL,
-                        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-                        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                ");
+                // Try with foreign keys first
+                try {
+                    DB::statement("
+                        CREATE TABLE IF NOT EXISTS chat_messages (
+                            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                            sender_id BIGINT UNSIGNED NOT NULL,
+                            receiver_id BIGINT UNSIGNED NOT NULL,
+                            message TEXT NOT NULL,
+                            is_read TINYINT(1) DEFAULT 0,
+                            created_at TIMESTAMP NULL,
+                            updated_at TIMESTAMP NULL,
+                            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                            FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    ");
+                } catch (\Exception $e) {
+                    // If foreign key fails, create without them
+                    DB::statement("
+                        CREATE TABLE IF NOT EXISTS chat_messages (
+                            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                            sender_id BIGINT UNSIGNED NOT NULL,
+                            receiver_id BIGINT UNSIGNED NOT NULL,
+                            message TEXT NOT NULL,
+                            is_read TINYINT(1) DEFAULT 0,
+                            created_at TIMESTAMP NULL,
+                            updated_at TIMESTAMP NULL,
+                            INDEX idx_sender (sender_id),
+                            INDEX idx_receiver (receiver_id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    ");
+                }
             } else {
                 // SQLite or other
                 DB::statement("
@@ -52,9 +79,7 @@ class ChatController extends Controller
                         message TEXT NOT NULL,
                         is_read INTEGER DEFAULT 0,
                         created_at DATETIME,
-                        updated_at DATETIME,
-                        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-                        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+                        updated_at DATETIME
                     )
                 ");
             }
