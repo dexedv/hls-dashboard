@@ -20,7 +20,7 @@ return new class extends Migration
         Schema::create('user_labels', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->bigInteger('label_id');
+            $table->uuid('label_id');
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
