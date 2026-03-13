@@ -17,14 +17,4 @@ require __DIR__.'/../vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
-// Clear route cache in debug mode
-if (config('app.debug')) {
-    $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
-    try {
-        \Illuminate\Support\Facades\Artisan::call('route:clear');
-    } catch (\Exception $e) {
-        // Ignore errors
-    }
-}
-
 $app->handleRequest(Request::capture());
