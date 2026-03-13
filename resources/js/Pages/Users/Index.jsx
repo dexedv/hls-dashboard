@@ -233,9 +233,14 @@ export default function UsersIndex({ users }) {
                                         onChange={e => setData('role', e.target.value)}
                                         className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                                     >
-                                        <option value="employee">Mitarbeiter</option>
-                                        <option value="manager">Manager</option>
+                                        <option value="owner">Inhaber</option>
                                         <option value="admin">Administrator</option>
+                                        <option value="manager">Manager</option>
+                                        <option value="employee">Mitarbeiter</option>
+                                        <option value="support">Support</option>
+                                        <option value="finance">Finanzen</option>
+                                        <option value="sales">Vertrieb</option>
+                                        <option value="guest">Gast</option>
                                         <option value="viewer">Betrachter</option>
                                     </select>
                                 </div>
