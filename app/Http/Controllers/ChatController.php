@@ -18,15 +18,31 @@ class ChatController extends Controller
      */
     private function ensureChatTable()
     {
-        if (!SupabaseHelper::useSupabase() && !Schema::hasTable('chat_messages')) {
-            Schema::create('chat_messages', function ($table) {
-                $table->id();
-                $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
-                $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-                $table->text('message');
-                $table->boolean('is_read')->default(false);
-                $table->timestamps();
-            });
+        try {
+            $useSupabase = false;
+            try {
+                $useSupabase = SupabaseHelper::useSupabase();
+            } catch (\Exception $e) {
+                $useSupabase = false;
+            }
+
+            if (!$useSupabase) {
+                if (!Schema::hasTable('chat_messages')) {
+                    Schema::create('chat_messages', function ($table) {
+                        $table->id();
+                        $table->unsignedBigInteger('sender_id');
+                        $table->unsignedBigInteger('receiver_id');
+                        $table->text('message');
+                        $table->boolean('is_read')->default(false);
+                        $table->timestamps();
+
+                        $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
+                        $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
+                    });
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Chat table creation failed: ' . $e->getMessage());
         }
     }
 
