@@ -159,6 +159,7 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
         Route::get('/chat/conversation/{userId}', [ChatController::class, 'conversation'])->name('chat.conversation');
         Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
         Route::get('/chat/unread', [ChatController::class, 'unread'])->name('chat.unread');
+        Route::get('/chat/setup', [ChatController::class, 'setup'])->name('chat.setup');
     });
 });
 

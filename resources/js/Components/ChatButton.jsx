@@ -14,7 +14,10 @@ export default function ChatButton() {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
-        fetchConversations();
+        // Setup chat table first
+        fetch('/chat/setup').then(() => {
+            fetchConversations();
+        });
         const interval = setInterval(fetchUnreadCount, 30000);
         return () => clearInterval(interval);
     }, []);

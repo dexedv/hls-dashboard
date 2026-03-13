@@ -274,4 +274,13 @@ class ChatController extends Controller
 
         return response()->json(['unreadCount' => $unreadCount]);
     }
+
+    /**
+     * Setup chat - create table if not exists
+     */
+    public function setup()
+    {
+        $this->ensureChatTable();
+        return response()->json(['success' => true, 'message' => 'Chat table ready']);
+    }
 }

@@ -172,6 +172,9 @@ class InstallController extends Controller
         // Create default label
         $this->envManager->createDefaultLabel();
 
+        // Create chat messages table
+        $this->envManager->createChatTable();
+
         // Clear config cache again after migrations
         Artisan::call('config:clear');
 
