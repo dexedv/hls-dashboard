@@ -9,103 +9,96 @@ export default function ChatButton() {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
+    const [allUsers, setAllUsers] = useState([]);
     const messagesEndRef = useRef(null);
 
-    // Load from localStorage on mount
+    const fetchConversations = async () => {
+        try {
+            const response = await fetch('/chat');
+            const data = await response.json();
+            setConversations(data.conversationUsers || []);
+            setUnreadCount(data.unreadCount || 0);
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+        }
+    };
+
+    const fetchUnreadCount = async () => {
+        try {
+            const response = await fetch('/chat/unread');
+            const data = await response.json();
+            setUnreadCount(data.unreadCount || 0);
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+        }
+    };
+
+    const fetchMessages = async (userId) => {
+        try {
+            const response = await fetch(`/chat/conversation/${userId}`);
+            const data = await response.json();
+            setMessages(data.messages || []);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        }
+    };
+
+    const fetchAllUsers = async () => {
+        try {
+            const response = await fetch('/chat/users');
+            const data = await response.json();
+            setAllUsers(data.users || []);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
+
+    const sendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !selectedUser) return;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            await fetch('/chat/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    receiver_id: selectedUser.id,
+                    message: newMessage,
+                }),
+            });
+            setNewMessage('');
+            fetchMessages(selectedUser.id);
+            fetchConversations();
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
+    };
+
     useEffect(() => {
-        loadMessages();
-    }, []);
+        if (isOpen) {
+            fetchConversations();
+            fetchAllUsers();
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (selectedUser) {
+            fetchMessages(selectedUser.id);
+        }
+    }, [selectedUser]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const loadMessages = () => {
-        const stored = localStorage.getItem('chat_messages');
-        if (stored) {
-            const allMessages = JSON.parse(stored);
-            const userId = auth.user.id;
-
-            // Get unique users
-            const userIds = new Set();
-            allMessages.forEach(msg => {
-                if (msg.sender_id === userId) userIds.add(msg.receiver_id);
-                if (msg.receiver_id === userId) userIds.add(msg.sender_id);
-            });
-
-            // Create mock users for demo
-            const users = Array.from(userIds).map(id => ({
-                id,
-                name: `Mitarbeiter ${id}`,
-                role: 'employee'
-            }));
-            setConversations(users);
-
-            // Calculate unread
-            const unread = allMessages.filter(m => m.receiver_id === userId && !m.read).length;
-            setUnreadCount(unread);
-        }
-    };
-
-    const sendMessage = () => {
-        if (!newMessage.trim() || !selectedUser) return;
-
-        const stored = localStorage.getItem('chat_messages') || '[]';
-        const allMessages = JSON.parse(stored);
-
-        const newMsg = {
-            id: Date.now(),
-            sender_id: auth.user.id,
-            receiver_id: selectedUser.id,
-            message: newMessage,
-            read: false,
-            created_at: new Date().toISOString()
-        };
-
-        allMessages.push(newMsg);
-        localStorage.setItem('chat_messages', JSON.stringify(allMessages));
-
-        setMessages([...messages, newMsg]);
-        setNewMessage('');
-    };
-
-    const selectUser = (user) => {
-        setSelectedUser(user);
-        loadConversation(user.id);
-
-        // Mark as read
-        const stored = localStorage.getItem('chat_messages') || '[]';
-        const allMessages = JSON.parse(stored).map(msg => {
-            if (msg.receiver_id === auth.user.id && msg.sender_id === user.id) {
-                msg.read = true;
-            }
-            return msg;
-        });
-        localStorage.setItem('chat_messages', JSON.stringify(allMessages));
-        setUnreadCount(allMessages.filter(m => m.receiver_id === auth.user.id && !m.read).length);
-    };
-
-    const loadConversation = (userId) => {
-        const stored = localStorage.getItem('chat_messages') || '[]';
-        const allMessages = JSON.parse(stored);
-        const userMessages = allMessages.filter(
-            m => (m.sender_id === auth.user.id && m.receiver_id === userId) ||
-                 (m.sender_id === userId && m.receiver_id === auth.user.id)
-        ).sort((a, b) => a.id - b.id);
-        setMessages(userMessages);
-    };
-
     const formatTime = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     };
-
-    // Demo users for selection
-    const demoUsers = [
-        { id: 1, name: 'Max Mustermann', role: 'admin' },
-        { id: 2, name: 'Anna Schmidt', role: 'employee' },
-        { id: 3, name: 'Tom Weber', role: 'manager' },
-    ];
 
     return (
         <>
@@ -147,13 +140,62 @@ export default function ChatButton() {
                         {!selectedUser && (
                             <div className="w-full flex flex-col">
                                 <div className="p-3 border-b border-gray-100">
-                                    <p className="text-sm text-gray-500 mb-2">Demo-Chat (lokal gespeichert)</p>
+                                    <button
+                                        onClick={fetchAllUsers}
+                                        className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Neues Gespräch
+                                    </button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto">
-                                    {demoUsers.map((user) => (
+                                    {conversations.length > 0 ? (
+                                        conversations.map((user) => (
+                                            <button
+                                                key={user.id}
+                                                onClick={() => setSelectedUser(user)}
+                                                className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold">
+                                                    {user.name?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 text-left">
+                                                    <p className="font-medium text-gray-900">{user.name}</p>
+                                                    <p className="text-sm text-gray-500">{user.role}</p>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center text-gray-500">
+                                            <p>Keine Gespräche vorhanden</p>
+                                            <p className="text-sm mt-1">Klicke auf "Neues Gespräch"</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* User Selection */}
+                        {selectedUser && !messages.length && conversations.length === 0 && (
+                            <div className="w-full flex flex-col">
+                                <div className="p-3 border-b border-gray-100">
+                                    <button
+                                        onClick={() => setSelectedUser(null)}
+                                        className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-sm"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Zurück
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto">
+                                    {allUsers.map((user) => (
                                         <button
                                             key={user.id}
-                                            onClick={() => selectUser(user)}
+                                            onClick={() => setSelectedUser(user)}
                                             className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"
                                         >
                                             <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold">
@@ -161,7 +203,7 @@ export default function ChatButton() {
                                             </div>
                                             <div className="flex-1 text-left">
                                                 <p className="font-medium text-gray-900">{user.name}</p>
-                                                <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                                                <p className="text-sm text-gray-500">{user.role}</p>
                                             </div>
                                         </button>
                                     ))}
@@ -189,37 +231,33 @@ export default function ChatButton() {
 
                                 {/* Messages */}
                                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                                    {messages.length === 0 ? (
-                                        <p className="text-center text-gray-500 py-8">Noch keine Nachrichten</p>
-                                    ) : (
-                                        messages.map((msg, index) => {
-                                            const isOwn = msg.sender_id === auth.user.id;
-                                            return (
+                                    {messages.map((msg, index) => {
+                                        const isOwn = msg.sender_id === auth.user.id;
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                                            >
                                                 <div
-                                                    key={index}
-                                                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                                                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                                                        isOwn
+                                                            ? 'bg-primary-600 text-white'
+                                                            : 'bg-gray-100 text-gray-900'
+                                                    }`}
                                                 >
-                                                    <div
-                                                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                                                            isOwn
-                                                                ? 'bg-primary-600 text-white'
-                                                                : 'bg-gray-100 text-gray-900'
-                                                        }`}
-                                                    >
-                                                        <p>{msg.message}</p>
-                                                        <p className={`text-xs mt-1 ${isOwn ? 'text-primary-200' : 'text-gray-500'}`}>
-                                                            {formatTime(msg.created_at)}
-                                                        </p>
-                                                    </div>
+                                                    <p>{msg.message}</p>
+                                                    <p className={`text-xs mt-1 ${isOwn ? 'text-primary-200' : 'text-gray-500'}`}>
+                                                        {formatTime(msg.created_at)}
+                                                    </p>
                                                 </div>
-                                            );
-                                        })
-                                    )}
+                                            </div>
+                                        );
+                                    })}
                                     <div ref={messagesEndRef} />
                                 </div>
 
                                 {/* Message Input */}
-                                <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="p-3 border-t border-gray-100">
+                                <form onSubmit={sendMessage} className="p-3 border-t border-gray-100">
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
