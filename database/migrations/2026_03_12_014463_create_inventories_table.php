@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Create categories first (before inventories which references it)
+        Schema::create('inventory_categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->foreignId('parent_id')->nullable()->constrained('inventory_categories')->onDelete('set null');
+            $table->timestamps();
+        });
+
         Schema::create('inventories', function (Blueprint $table) {
             $table->id();
             $table->string('sku')->unique()->nullable();
@@ -24,13 +32,6 @@ return new class extends Migration
             $table->string('barcode')->nullable();
             $table->timestamps();
             $table->softDeletes();
-        });
-
-        Schema::create('inventory_categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->foreignId('parent_id')->nullable()->constrained('inventory_categories')->onDelete('set null');
-            $table->timestamps();
         });
 
         Schema::create('inventory_movements', function (Blueprint $table) {
