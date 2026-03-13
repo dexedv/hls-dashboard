@@ -73,7 +73,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Show chat page with all messages
+     * Show chat page with all messages (also serves as API for floating button)
      */
     public function index(Request $request)
     {
@@ -110,6 +110,15 @@ class ChatController extends Controller
                 return $msg['receiver_id'] == $userId && !$msg['is_read'];
             })->count();
 
+            // Check if API request (Accept: application/json)
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'messages' => $messages->values(),
+                    'conversationUsers' => $conversationUsers,
+                    'unreadCount' => $unreadCount,
+                ]);
+            }
+
             return Inertia::render('Chat/Index', [
                 'messages' => $messages->values(),
                 'conversationUsers' => $conversationUsers,
@@ -138,6 +147,15 @@ class ChatController extends Controller
         $unreadCount = ChatMessage::where('receiver_id', $userId)
             ->where('is_read', false)
             ->count();
+
+        // Check if API request (Accept: application/json)
+        if ($request->expectsJson()) {
+            return response()->json([
+                'messages' => $messages,
+                'conversationUsers' => $conversationUsers,
+                'unreadCount' => $unreadCount,
+            ]);
+        }
 
         return Inertia::render('Chat/Index', [
             'messages' => $messages,
