@@ -159,43 +159,47 @@ class TeamController extends Controller
     public function edit($id)
     {
         $useSupabase = SupabaseHelper::useSupabase();
+        $supabaseAvailable = $useSupabase;
 
         if ($useSupabase) {
-            $user = SupabaseRepository::users()->find($id);
-
-            // Get all available labels - try Supabase first, fall back to local DB
-            $labels = [];
+            // Try to fetch user from Supabase first
             try {
-                $labels = SupabaseRepository::labels()->all()->toArray();
-            } catch (\Exception $e) {
-                // Fall back to local DB if Supabase fails
-                $useSupabase = false;
-            }
+                $user = SupabaseRepository::users()->find($id);
 
-            if ($useSupabase) {
-                // Get user's assigned labels
+                // Get all available labels
                 try {
-                    $allUserLabels = SupabaseRepository::userLabels()->get();
-                    $userLabelIds = $allUserLabels->filter(function($ul) use ($id) {
-                        return $ul['user_id'] == $id;
-                    })->pluck('label_id')->toArray();
+                    $labels = SupabaseRepository::labels()->all()->toArray();
 
-                    // Add labels to user object
-                    $user['labels'] = collect($labels)->filter(function($label) use ($userLabelIds) {
-                        return in_array($label['id'], $userLabelIds, true);
-                    })->values()->toArray();
+                    // Get user's assigned labels
+                    try {
+                        $allUserLabels = SupabaseRepository::userLabels()->get();
+                        $userLabelIds = $allUserLabels->filter(function($ul) use ($id) {
+                            return $ul['user_id'] == $id;
+                        })->pluck('label_id')->toArray();
+
+                        // Add labels to user object
+                        $user['labels'] = collect($labels)->filter(function($label) use ($userLabelIds) {
+                            return in_array($label['id'], $userLabelIds, true);
+                        })->values()->toArray();
+                    } catch (\Exception $e) {
+                        $user['labels'] = [];
+                    }
                 } catch (\Exception $e) {
-                    $user['labels'] = [];
+                    // Labels table doesn't exist in Supabase, fall back completely
+                    $supabaseAvailable = false;
                 }
-            } else {
-                // Fallback: get labels from local DB
-                $labels = Label::all()->toArray();
-                $localUser = User::with('labels')->find($id);
-                $user['labels'] = $localUser ? $localUser->labels->toArray() : [];
+            } catch (\Exception $e) {
+                // User doesn't exist in Supabase, fall back to local DB
+                $supabaseAvailable = false;
             }
-        } else {
+        }
+
+        if (!$supabaseAvailable) {
+            // Fallback to local database
             $user = User::with('labels')->findOrFail($id);
             $labels = Label::all();
+            $user = $user->toArray();
+            $user['labels'] = $user['labels'] ?? [];
         }
 
         return Inertia::render('Team/Edit', [
