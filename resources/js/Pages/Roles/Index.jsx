@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader, { Button } from '@/Components/PageHeader';
 
@@ -30,64 +30,43 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
         }));
     };
 
-    const getCsrfToken = () => {
-        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-        return match ? decodeURIComponent(match[1]) : '';
-    };
+    const { post } = useForm();
 
-    const handleSave = async () => {
+    const handleSave = () => {
         setSaving(true);
-        try {
-            const response = await fetch('/roles/permissions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    role: selectedRole,
-                    permissions: localPermissions[selectedRole]
-                })
-            });
-
-            if (response.ok) {
+        post('/roles/permissions', {
+            data: {
+                role: selectedRole,
+                permissions: localPermissions[selectedRole]
+            },
+            onSuccess: () => {
                 alert('Berechtigungen gespeichert!');
                 window.location.reload();
-            } else {
+            },
+            onError: () => {
                 alert('Fehler beim Speichern');
+                setSaving(false);
             }
-        } catch (error) {
-            alert('Fehler: ' + error.message);
-        }
-        setSaving(false);
+        });
     };
 
-    const handleReset = async () => {
+    const handleReset = () => {
         if (!confirm('Moechten Sie diese Rolle wirklich auf die Standardwerte zuruecksetzen?')) {
             return;
         }
 
         setSaving(true);
-        try {
-            const response = await fetch('/roles/reset', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ role: selectedRole })
-            });
-
-            if (response.ok) {
+        post('/roles/reset', {
+            data: { role: selectedRole },
+            onSuccess: () => {
                 alert('Rolle zuruecksetzt!');
                 window.location.reload();
+            },
+            onError: () => {
+                alert('Fehler beim Zuruecksetzen');
+                setSaving(false);
             }
-        } catch (error) {
-            alert('Fehler: ' + error.message);
-        }
-        setSaving(false);
+        });
     };
 
     // Group permissions by module
