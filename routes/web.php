@@ -125,8 +125,8 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::post('users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
     Route::post('users/{id}/disapprove', [UserController::class, 'disapprove'])->name('users.disapprove');
     Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
-    Route::post('roles/permissions', [RoleController::class, 'updatePermissions'])->name('roles.updatePermissions')->withoutMiddleware('csrf');
-    Route::post('roles/reset', [RoleController::class, 'resetRole'])->name('roles.reset')->withoutMiddleware('csrf');
+    Route::post('roles/permissions', [RoleController::class, 'updatePermissions'])->name('roles.updatePermissions');
+    Route::post('roles/reset', [RoleController::class, 'resetRole'])->name('roles.reset');
     Route::get('labels', [LabelController::class, 'index'])->name('labels.index');
     Route::post('labels', [LabelController::class, 'store'])->name('labels.store');
     Route::put('labels/{id}', [LabelController::class, 'update'])->name('labels.update');
@@ -135,10 +135,10 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
     Route::get('integrations', [SettingsController::class, 'integrations'])->name('integrations.index');
     Route::get('database', [SettingsController::class, 'database'])->name('database.index');
-    Route::post('database/execute', [SettingsController::class, 'executeSql'])->name('database.execute')->withoutMiddleware('csrf');
-    Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache')->withoutMiddleware('csrf');
-    Route::post('database/optimize', [SettingsController::class, 'optimizeDatabase'])->name('database.optimize')->withoutMiddleware('csrf');
-    Route::post('database/backup', [SettingsController::class, 'createBackup'])->name('database.backup')->withoutMiddleware('csrf');
+    Route::post('database/execute', [SettingsController::class, 'executeSql'])->name('database.execute');
+    Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache');
+    Route::post('database/optimize', [SettingsController::class, 'optimizeDatabase'])->name('database.optimize');
+    Route::post('database/backup', [SettingsController::class, 'createBackup'])->name('database.backup');
 
     // Chat routes - outside lexware prefix for simpler URLs
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
