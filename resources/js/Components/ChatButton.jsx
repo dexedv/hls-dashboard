@@ -15,7 +15,9 @@ export default function ChatButton() {
 
     const fetchConversations = async () => {
         try {
-            const response = await fetch('/chat');
+            const response = await fetch('/chat', {
+                credentials: 'same-origin',
+            });
             if (!response.ok) {
                 console.error('Fetch error:', response.status, response.statusText);
                 return;
@@ -30,7 +32,9 @@ export default function ChatButton() {
 
     const fetchUnreadCount = async () => {
         try {
-            const response = await fetch('/chat/unread');
+            const response = await fetch('/chat/unread', {
+                credentials: 'same-origin',
+            });
             if (!response.ok) {
                 console.error('Fetch error:', response.status, response.statusText);
                 return;
@@ -44,7 +48,9 @@ export default function ChatButton() {
 
     const fetchMessages = async (userId) => {
         try {
-            const response = await fetch(`/chat/conversation/${userId}`);
+            const response = await fetch(`/chat/conversation/${userId}`, {
+                credentials: 'same-origin',
+            });
             if (!response.ok) {
                 console.error('Fetch error:', response.status, response.statusText);
                 return;
@@ -58,7 +64,9 @@ export default function ChatButton() {
 
     const fetchAllUsers = async () => {
         try {
-            const response = await fetch('/chat/users');
+            const response = await fetch('/chat/users', {
+                credentials: 'same-origin',
+            });
             if (!response.ok) {
                 console.error('Fetch error:', response.status, response.statusText);
                 return;
@@ -78,6 +86,7 @@ export default function ChatButton() {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
             const response = await fetch('/chat/send', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
