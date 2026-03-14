@@ -83,13 +83,18 @@ export default function ChatButton() {
         if (!newMessage.trim() || !selectedUser) return;
 
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            // Get CSRF token from cookie (Laravel default)
+            const csrfToken = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1];
+
             const response = await fetch('/chat/send', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
+                    'X-CSRF-TOKEN': decodeURIComponent(csrfToken || ''),
                 },
                 body: JSON.stringify({
                     receiver_id: selectedUser.id,
