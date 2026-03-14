@@ -14,7 +14,11 @@ export default function ChatButton() {
 
     const fetchConversations = async () => {
         try {
-            const response = await fetch('/lexware/chat');
+            const response = await fetch('/chat');
+            if (!response.ok) {
+                console.error('Fetch error:', response.status, response.statusText);
+                return;
+            }
             const data = await response.json();
             setConversations(data.conversationUsers || []);
             setUnreadCount(data.unreadCount || 0);
@@ -25,7 +29,11 @@ export default function ChatButton() {
 
     const fetchUnreadCount = async () => {
         try {
-            const response = await fetch('/lexware/chat/unread');
+            const response = await fetch('/chat/unread');
+            if (!response.ok) {
+                console.error('Fetch error:', response.status, response.statusText);
+                return;
+            }
             const data = await response.json();
             setUnreadCount(data.unreadCount || 0);
         } catch (error) {
@@ -35,7 +43,11 @@ export default function ChatButton() {
 
     const fetchMessages = async (userId) => {
         try {
-            const response = await fetch(`/lexware/chat/conversation/${userId}`);
+            const response = await fetch(`/chat/conversation/${userId}`);
+            if (!response.ok) {
+                console.error('Fetch error:', response.status, response.statusText);
+                return;
+            }
             const data = await response.json();
             setMessages(data.messages || []);
         } catch (error) {
@@ -45,7 +57,11 @@ export default function ChatButton() {
 
     const fetchAllUsers = async () => {
         try {
-            const response = await fetch('/lexware/chat/users');
+            const response = await fetch('/chat/users');
+            if (!response.ok) {
+                console.error('Fetch error:', response.status, response.statusText);
+                return;
+            }
             const data = await response.json();
             setAllUsers(data.users || []);
         } catch (error) {
@@ -59,7 +75,7 @@ export default function ChatButton() {
 
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            await fetch('/lexware/chat/send', {
+            const response = await fetch('/chat/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -70,6 +86,10 @@ export default function ChatButton() {
                     message: newMessage,
                 }),
             });
+            if (!response.ok) {
+                console.error('Send error:', response.status, response.statusText);
+                return;
+            }
             setNewMessage('');
             fetchMessages(selectedUser.id);
             fetchConversations();

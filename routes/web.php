@@ -134,6 +134,14 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::get('integrations', [SettingsController::class, 'integrations'])->name('integrations.index');
     Route::get('database', [SettingsController::class, 'database'])->name('database.index');
 
+    // Chat routes - outside lexware prefix for simpler URLs
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/users', [ChatController::class, 'users'])->name('chat.users');
+    Route::get('/chat/conversation/{userId}', [ChatController::class, 'conversation'])->name('chat.conversation');
+    Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
+    Route::get('/chat/unread', [ChatController::class, 'unread'])->name('chat.unread');
+    Route::get('/chat/setup', [ChatController::class, 'setup'])->name('chat.setup');
+
     // Lexware Integration Routes
     Route::prefix('lexware')->group(function () {
         Route::get('test', [LexwareController::class, 'testConnection'])->name('lexware.test');
@@ -152,14 +160,6 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
         // Quote sync
         Route::post('quotes/sync-all', [LexwareController::class, 'syncAllQuotes'])->name('lexware.quotes.syncAll');
         Route::post('quotes/{quote}/sync', [LexwareController::class, 'syncQuote'])->name('lexware.quotes.sync');
-
-        // Chat routes
-        Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/users', [ChatController::class, 'users'])->name('chat.users');
-        Route::get('/chat/conversation/{userId}', [ChatController::class, 'conversation'])->name('chat.conversation');
-        Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
-        Route::get('/chat/unread', [ChatController::class, 'unread'])->name('chat.unread');
-        Route::get('/chat/setup', [ChatController::class, 'setup'])->name('chat.setup');
     });
 });
 
