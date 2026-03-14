@@ -41,12 +41,12 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'is_approved' => false,
         ]);
 
         event(new Registered($user));
 
-        Auth::login($user);
-
-        return redirect(route('dashboard', absolute: false));
+        // User is not logged in automatically - must wait for admin approval
+        return redirect('/login')->with('status', 'registration-pending');
     }
 }

@@ -25,7 +25,13 @@ export default function Login({ status, canResetPassword }) {
         <GuestLayout>
             <Head title="Log in" />
 
-            {status && (
+            {status === 'registration-pending' && (
+                <div className="mb-4 p-4 text-sm font-medium text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    Ihre Registrierung war erfolgreich. Ihr Konto muss noch von einem Administrator freigeschaltet werden. Bitte warten Sie auf die Bestätigung per E-Mail.
+                </div>
+            )}
+
+            {status && status !== 'registration-pending' && (
                 <div className="mb-4 text-sm font-medium text-green-600">
                     {status}
                 </div>

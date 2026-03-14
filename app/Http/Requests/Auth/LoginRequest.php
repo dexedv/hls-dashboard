@@ -50,6 +50,17 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Check if user is approved
+        $user = Auth::user();
+        if (!$user || !$user->is_approved) {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch einen Administrator.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

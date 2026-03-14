@@ -26,6 +26,7 @@ class User extends Authenticatable
         'avatar',
         'phone',
         'created_by',
+        'is_approved',
     ];
 
     /**
@@ -81,6 +82,22 @@ class User extends Authenticatable
     public function isManager(): bool
     {
         return in_array($this->role, ['admin', 'manager']);
+    }
+
+    /**
+     * Check if user is owner
+     */
+    public function isOwner(): bool
+    {
+        return $this->role === 'owner';
+    }
+
+    /**
+     * Check if user is approved
+     */
+    public function isApproved(): bool
+    {
+        return $this->is_approved === true;
     }
 
     /**

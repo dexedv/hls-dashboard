@@ -12,7 +12,7 @@ export default function UsersIndex({ users }) {
     const [activeTab, setActiveTab] = useState('details');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const { data, setData, put, processing, errors, reset } = useForm({
+    const { data, setData, put, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         password: '',
@@ -115,6 +115,7 @@ export default function UsersIndex({ users }) {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">E-Mail</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rolle</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
                             </tr>
                         </thead>
@@ -132,7 +133,38 @@ export default function UsersIndex({ users }) {
                                             {roleLabels[user.role] || user.role || 'user'}
                                         </span>
                                     </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {user.is_approved ? (
+                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                                Aktiv
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                                Ausstehend
+                                            </span>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        {!user.is_approved && (
+                                            <Button
+                                                variant="success"
+                                                onClick={() => post(route('users.approve', user.id))}
+                                                className="text-sm mr-2"
+                                                disabled={processing}
+                                            >
+                                                Freischalten
+                                            </Button>
+                                        )}
+                                        {user.is_approved && user.role !== 'owner' && (
+                                            <Button
+                                                variant="danger"
+                                                onClick={() => post(route('users.disapprove', user.id))}
+                                                className="text-sm mr-2"
+                                                disabled={processing}
+                                            >
+                                                Deaktivieren
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="secondary"
                                             onClick={() => openEditModal(user)}

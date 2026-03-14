@@ -67,4 +67,26 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', 'Benutzer erfolgreich aktualisiert.');
     }
+
+    /**
+     * Approve a user account
+     */
+    public function approve(Request $request, $id)
+    {
+        $user = \App\Models\User::findOrFail($id);
+        $user->update(['is_approved' => true]);
+
+        return redirect()->back()->with('success', 'Benutzer wurde freigeschaltet.');
+    }
+
+    /**
+     * Disapprove (deactivate) a user account
+     */
+    public function disapprove(Request $request, $id)
+    {
+        $user = \App\Models\User::findOrFail($id);
+        $user->update(['is_approved' => false]);
+
+        return redirect()->back()->with('success', 'Benutzer wurde deaktiviert.');
+    }
 }

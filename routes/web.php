@@ -122,6 +122,8 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::delete('email/{emailId}', [EmailController::class, 'destroy'])->name('email.destroy');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::post('users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
+    Route::post('users/{id}/disapprove', [UserController::class, 'disapprove'])->name('users.disapprove');
     Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('roles/permissions', [RoleController::class, 'updatePermissions'])->name('roles.updatePermissions');
     Route::post('roles/reset', [RoleController::class, 'resetRole'])->name('roles.reset');
@@ -133,6 +135,10 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
     Route::get('integrations', [SettingsController::class, 'integrations'])->name('integrations.index');
     Route::get('database', [SettingsController::class, 'database'])->name('database.index');
+    Route::post('database/execute', [SettingsController::class, 'executeSql'])->name('database.execute');
+    Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache');
+    Route::post('database/optimize', [SettingsController::class, 'optimizeDatabase'])->name('database.optimize');
+    Route::post('database/backup', [SettingsController::class, 'createBackup'])->name('database.backup');
 
     // Chat routes - outside lexware prefix for simpler URLs
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
