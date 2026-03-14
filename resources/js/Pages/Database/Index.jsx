@@ -49,12 +49,18 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
         setQueryError(null);
 
         try {
+            // Get CSRF token from cookie
+            const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]
+                ? decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)[1])
+                : document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
             const response = await fetch(route('database.execute'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({ query: sqlQuery }),
             });
 
@@ -84,12 +90,18 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
         };
 
         try {
+            // Get CSRF token from cookie
+            const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]
+                ? decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)[1])
+                : document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
             const response = await fetch(route(routes[action]), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
+                credentials: 'same-origin',
             });
 
             const data = await response.json();
