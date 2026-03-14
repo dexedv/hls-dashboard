@@ -81,7 +81,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Show chat page with all messages
+     * Show chat page - returns JSON for API calls
      */
     public function index(Request $request)
     {
@@ -113,16 +113,8 @@ class ChatController extends Controller
             ->where('is_read', false)
             ->count();
 
-        // Check if API request (Accept: application/json)
-        if ($request->expectsJson()) {
-            return response()->json([
-                'messages' => $messages,
-                'conversationUsers' => $conversationUsers,
-                'unreadCount' => $unreadCount,
-            ]);
-        }
-
-        return Inertia::render('Chat/Index', [
+        // Always return JSON (for floating chat button)
+        return response()->json([
             'messages' => $messages,
             'conversationUsers' => $conversationUsers,
             'unreadCount' => $unreadCount,
