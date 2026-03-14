@@ -10,6 +10,7 @@ export default function ChatButton() {
     const [newMessage, setNewMessage] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
     const [allUsers, setAllUsers] = useState([]);
+    const [showUserList, setShowUserList] = useState(false);
     const messagesEndRef = useRef(null);
 
     const fetchConversations = async () => {
@@ -161,7 +162,7 @@ export default function ChatButton() {
                             <div className="w-full flex flex-col">
                                 <div className="p-3 border-b border-gray-100">
                                     <button
-                                        onClick={fetchAllUsers}
+                                        onClick={() => { setShowUserList(true); fetchAllUsers(); }}
                                         className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,11 +199,11 @@ export default function ChatButton() {
                         )}
 
                         {/* User Selection */}
-                        {selectedUser && !messages.length && conversations.length === 0 && (
+                        {(showUserList || (selectedUser && !messages.length && conversations.length === 0)) && (
                             <div className="w-full flex flex-col">
                                 <div className="p-3 border-b border-gray-100">
                                     <button
-                                        onClick={() => setSelectedUser(null)}
+                                        onClick={() => { setSelectedUser(null); setShowUserList(false); }}
                                         className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-sm"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,21 +213,27 @@ export default function ChatButton() {
                                     </button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto">
-                                    {allUsers.map((user) => (
-                                        <button
-                                            key={user.id}
-                                            onClick={() => setSelectedUser(user)}
-                                            className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"
-                                        >
-                                            <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold">
-                                                {user.name?.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="flex-1 text-left">
-                                                <p className="font-medium text-gray-900">{user.name}</p>
-                                                <p className="text-sm text-gray-500">{user.role}</p>
-                                            </div>
-                                        </button>
-                                    ))}
+                                    {allUsers.length > 0 ? (
+                                        allUsers.map((user) => (
+                                            <button
+                                                key={user.id}
+                                                onClick={() => { setSelectedUser(user); setShowUserList(false); }}
+                                                className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold">
+                                                    {user.name?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 text-left">
+                                                    <p className="font-medium text-gray-900">{user.name}</p>
+                                                    <p className="text-sm text-gray-500">{user.role}</p>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center text-gray-500">
+                                            <p>Keine Benutzer gefunden</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
