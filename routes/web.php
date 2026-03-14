@@ -135,10 +135,10 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
     Route::get('integrations', [SettingsController::class, 'integrations'])->name('integrations.index');
     Route::get('database', [SettingsController::class, 'database'])->name('database.index');
-    Route::post('database/execute', [SettingsController::class, 'executeSql'])->name('database.execute');
-    Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache');
-    Route::post('database/optimize', [SettingsController::class, 'optimizeDatabase'])->name('database.optimize');
-    Route::post('database/backup', [SettingsController::class, 'createBackup'])->name('database.backup');
+    Route::post('database/execute', [SettingsController::class, 'executeSql'])->name('database.execute')->withoutMiddleware('csrf');
+    Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache')->withoutMiddleware('csrf');
+    Route::post('database/optimize', [SettingsController::class, 'optimizeDatabase'])->name('database.optimize')->withoutMiddleware('csrf');
+    Route::post('database/backup', [SettingsController::class, 'createBackup'])->name('database.backup')->withoutMiddleware('csrf');
 
     // Chat routes - outside lexware prefix for simpler URLs
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
