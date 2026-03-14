@@ -30,6 +30,11 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
         }));
     };
 
+    const getCsrfToken = () => {
+        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -37,8 +42,9 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     role: selectedRole,
                     permissions: localPermissions[selectedRole]
@@ -68,8 +74,9 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({ role: selectedRole })
             });
 
