@@ -32,40 +32,41 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
 
     const { post } = useForm();
 
-    const handleSave = async () => {
+    const handleSave = () => {
         setSaving(true);
-        try {
-            await post('/roles/permissions', {
-                data: {
-                    role: selectedRole,
-                    permissions: localPermissions[selectedRole]
-                }
-            });
-            // If we get here, the request was successful
-            window.location.reload();
-        } catch (error) {
-            console.error('Save error:', error);
-            alert('Fehler beim Speichern');
-            setSaving(false);
-        }
+        post('/roles/permissions', {
+            data: {
+                role: selectedRole,
+                permissions: localPermissions[selectedRole]
+            },
+            onSuccess: () => {
+                alert('Berechtigungen gespeichert!');
+                window.location.reload();
+            },
+            onError: () => {
+                alert('Fehler beim Speichern');
+                setSaving(false);
+            }
+        });
     };
 
-    const handleReset = async () => {
+    const handleReset = () => {
         if (!confirm('Moechten Sie diese Rolle wirklich auf die Standardwerte zuruecksetzen?')) {
             return;
         }
 
         setSaving(true);
-        try {
-            await post('/roles/reset', {
-                data: { role: selectedRole }
-            });
-            window.location.reload();
-        } catch (error) {
-            console.error('Reset error:', error);
-            alert('Fehler beim Zuruecksetzen');
-            setSaving(false);
-        }
+        post('/roles/reset', {
+            data: { role: selectedRole },
+            onSuccess: () => {
+                alert('Rolle zuruecksetzt!');
+                window.location.reload();
+            },
+            onError: () => {
+                alert('Fehler beim Zuruecksetzen');
+                setSaving(false);
+            }
+        });
     };
 
     // Group permissions by module
