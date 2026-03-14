@@ -88,7 +88,7 @@ class RoleController extends Controller
         // Clear cache
         cache()->forget('role_permissions_' . $role);
 
-        return redirect()->route('roles.index')->with('success', 'Berechtigungen gespeichert!');
+        return to_route('roles.index');
     }
 
     /**
@@ -106,6 +106,6 @@ class RoleController extends Controller
         // Clear cache
         cache()->forget('role_permissions_' . $validated['role']);
 
-        return redirect()->route('roles.index')->with('success', 'Rolle auf Standardwerte zurückgesetzt!');
+        return to_route('roles.index');
     }
 }
