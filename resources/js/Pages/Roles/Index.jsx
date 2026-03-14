@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, usePage, useForm, router } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader, { Button } from '@/Components/PageHeader';
 
@@ -30,21 +30,11 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
         }));
     };
 
-    const { post } = useForm();
-
     const handleSave = () => {
         setSaving(true);
         router.post('/roles/permissions', {
             role: selectedRole,
             permissions: localPermissions[selectedRole]
-        }, {
-            onSuccess: () => {
-                alert('Berechtigungen gespeichert!');
-            },
-            onError: () => {
-                alert('Fehler beim Speichern');
-                setSaving(false);
-            }
         });
     };
 
@@ -56,14 +46,6 @@ export default function RolesIndex({ roles, permissions, rolePermissions }) {
         setSaving(true);
         router.post('/roles/reset', {
             role: selectedRole
-        }, {
-            onSuccess: () => {
-                alert('Rolle zuruecksetzt!');
-            },
-            onError: () => {
-                alert('Fehler beim Zuruecksetzen');
-                setSaving(false);
-            }
         });
     };
 
