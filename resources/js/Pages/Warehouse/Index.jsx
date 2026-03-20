@@ -5,19 +5,21 @@ import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 
-export default function WarehouseIndex({ stats, inventory }) {
+import Pagination from '@/Components/Pagination';
+
+export default function WarehouseIndex({ stats, items, allItems, recentMovements, filters }) {
     const [showModal, setShowModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { data, setData, post, processing, reset } = useForm({
         item_id: '',
-        type: 'in',
+        movement_type: 'in',
         quantity: 1,
         notes: '',
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('inventory.movements.store'), {
+        post(route('warehouse.store'), {
             onSuccess: () => {
                 setShowModal(false);
                 reset();
@@ -37,10 +39,7 @@ export default function WarehouseIndex({ stats, inventory }) {
         },
     ];
 
-    const filteredInventory = inventory?.data?.filter(item =>
-        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.sku?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    const inventoryData = items?.data || [];
 
     return (
         <DashboardLayout title="Warenwirtschaft">
@@ -96,6 +95,15 @@ export default function WarehouseIndex({ stats, inventory }) {
                 ))}
             </div>
 
+            {/* Pagination */}
+            <Pagination
+                links={items?.links}
+                from={items?.from}
+                to={items?.to}
+                total={items?.total}
+                entityName="Artikel"
+            />
+
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -111,12 +119,12 @@ export default function WarehouseIndex({ stats, inventory }) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Artikel</label>
                                 <select value={data.item_id} onChange={e => setData('item_id', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                                     <option value="">Artikel wählen</option>
-                                    {inventory?.data?.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                                    {(allItems || []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Bewegungstyp</label>
-                                <select value={data.type} onChange={e => setData('type', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+                                <select value={data.movement_type} onChange={e => setData('movement_type', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                                     <option value="in">Wareneingang</option>
                                     <option value="out">Warenausgang</option>
                                     <option value="adjustment">Korrektur</option>

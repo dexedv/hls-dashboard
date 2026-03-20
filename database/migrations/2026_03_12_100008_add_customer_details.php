@@ -9,12 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->string('industry')->nullable()->after('company');
-            $table->string('tax_number')->nullable()->after('industry');
-            $table->string('vat_id')->nullable()->after('tax_number');
-            $table->string('postal_code')->nullable()->after('address');
-            $table->string('city')->nullable()->after('postal_code');
-            $table->string('country')->default('DE')->after('city');
+            $table->string('industry')->nullable();
+            $table->string('tax_number')->nullable();
+            $table->string('vat_id')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('city')->nullable();
+            $table->string('country')->default('DE');
         });
     }
 

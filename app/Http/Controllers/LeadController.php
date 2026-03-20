@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\Customer;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,36 +15,12 @@ class LeadController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $leads = SupabaseRepository::leads()->all();
-
-            if ($request->search) {
-                $search = strtolower($request->search);
-                $leads = $leads->filter(function($l) use ($search) {
-                    return str_contains(strtolower($l['name'] ?? ''), $search) ||
-                           str_contains(strtolower($l['company'] ?? ''), $search);
-                });
-            }
-
-            if ($request->status) {
-                $leads = $leads->where('status', $request->status);
-            }
-
-            $leads = SupabaseHelper::toPaginated($leads, 10);
-
-            return Inertia::render('Leads/Index', [
-                'leads' => $leads,
-                'filters' => $request->only(['search', 'status']),
-                'statuses' => StatusHelper::leadStatuses(),
-            ]);
-        }
-
         $query = Lead::query();
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                    ->orWhere('company', 'like', "%{$request->search}%");
+                $q->where('name', 'ilike', "%{$request->search}%")
+                    ->orWhere('company', 'ilike', "%{$request->search}%");
             });
         }
 
@@ -70,14 +44,6 @@ class LeadController extends Controller
      */
     public function create(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $customers = SupabaseRepository::customers()->all();
-            return Inertia::render('Leads/Create', [
-                'customers' => $customers,
-                'customer_id' => $request->customer_id,
-            ]);
-        }
-
         $customers = Customer::all();
         return Inertia::render('Leads/Create', [
             'customers' => $customers,
@@ -104,11 +70,7 @@ class LeadController extends Controller
         $validated['created_by'] = auth()->id();
         $validated['status'] = $validated['status'] ?? 'new';
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leads()->create($validated);
-        } else {
-            Lead::create($validated);
-        }
+        Lead::create($validated);
 
         return redirect()->route('leads.index')
             ->with('success', 'Lead erfolgreich erstellt.');
@@ -119,14 +81,6 @@ class LeadController extends Controller
      */
     public function show(Lead $lead)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $lead = SupabaseRepository::leads()->find($lead->id);
-            return Inertia::render('Leads/Show', [
-                'lead' => $lead,
-                'statuses' => StatusHelper::leadStatuses(),
-            ]);
-        }
-
         $lead->load(['customer', 'creator']);
         return Inertia::render('Leads/Show', [
             'lead' => $lead,
@@ -139,15 +93,6 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $lead = SupabaseRepository::leads()->find($lead->id);
-            $customers = SupabaseRepository::customers()->all();
-            return Inertia::render('Leads/Edit', [
-                'lead' => $lead,
-                'customers' => $customers,
-            ]);
-        }
-
         $customers = Customer::all();
         return Inertia::render('Leads/Edit', [
             'lead' => $lead,
@@ -171,11 +116,7 @@ class LeadController extends Controller
             'customer_id' => 'nullable',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leads()->update($lead->id, $validated);
-        } else {
-            $lead->update($validated);
-        }
+        $lead->update($validated);
 
         return redirect()->route('leads.index')
             ->with('success', 'Lead erfolgreich aktualisiert.');
@@ -186,11 +127,7 @@ class LeadController extends Controller
      */
     public function destroy(Lead $lead)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leads()->delete($lead->id);
-        } else {
-            $lead->delete();
-        }
+        $lead->delete();
 
         return redirect()->route('leads.index')
             ->with('success', 'Lead erfolgreich gelöscht.');

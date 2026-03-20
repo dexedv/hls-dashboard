@@ -5,8 +5,9 @@ import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import Modal from '@/Components/Modal';
+import Pagination from '@/Components/Pagination';
 
-export default function UsersIndex({ users }) {
+export default function UsersIndex({ users, filters }) {
     const [showModal, setShowModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [activeTab, setActiveTab] = useState('details');
@@ -84,12 +85,14 @@ export default function UsersIndex({ users }) {
         { key: 'settings.manage', label: 'Einstellungen verwalten' },
     ];
 
-    // Filter users based on search query
-    const filteredUsers = users?.filter(user =>
+    const usersData = users?.data || [];
+
+    // Filter users based on local search query
+    const filteredUsers = usersData.filter(user =>
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         roleLabels[user.role]?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    );
 
     return (
         <DashboardLayout title="Benutzer">
@@ -184,6 +187,13 @@ export default function UsersIndex({ users }) {
                         action={false}
                     />
                 )}
+                <Pagination
+                    links={users?.links}
+                    from={users?.from}
+                    to={users?.to}
+                    total={users?.total}
+                    entityName="Benutzer"
+                />
             </div>
 
             {/* Edit Modal */}

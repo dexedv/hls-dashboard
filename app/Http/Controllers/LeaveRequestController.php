@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\LeaveRequest;
 use App\Models\User;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,25 +15,6 @@ class LeaveRequestController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $leaveRequests = SupabaseRepository::leaveRequests()->all();
-
-            // Filter by status
-            if ($request->status) {
-                $leaveRequests = $leaveRequests->where('status', $request->status);
-            }
-
-            $leaveRequests = SupabaseHelper::toPaginated($leaveRequests, 10);
-            $users = SupabaseRepository::users()->all();
-
-            return Inertia::render('Vacation/Index', [
-                'leaveRequests' => $leaveRequests,
-                'users' => $users,
-                'filters' => $request->only(['status']),
-                'statuses' => StatusHelper::vacationStatuses(),
-            ]);
-        }
-
         $query = LeaveRequest::query()->with(['user', 'approver']);
 
         // Filter by status
@@ -84,11 +63,7 @@ class LeaveRequestController extends Controller
         $end = \Carbon\Carbon::parse($validated['end_date']);
         $validated['days'] = $end->diffInDays($start) + 1;
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leaveRequests()->create($validated);
-        } else {
-            LeaveRequest::create($validated);
-        }
+        LeaveRequest::create($validated);
 
         return redirect()->route('vacation.index')
             ->with('success', 'Urlaubsantrag erfolgreich erstellt.');
@@ -99,13 +74,6 @@ class LeaveRequestController extends Controller
      */
     public function show(LeaveRequest $leaveRequest)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $leaveRequest = SupabaseRepository::leaveRequests()->find($leaveRequest->id);
-            return Inertia::render('Vacation/Show', [
-                'leaveRequest' => $leaveRequest,
-            ]);
-        }
-
         $leaveRequest->load(['user', 'approver']);
 
         return Inertia::render('Vacation/Show', [
@@ -118,10 +86,6 @@ class LeaveRequestController extends Controller
      */
     public function edit(LeaveRequest $leaveRequest)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $leaveRequest = SupabaseRepository::leaveRequests()->find($leaveRequest->id);
-        }
-
         return Inertia::render('Vacation/Edit', [
             'leaveRequest' => $leaveRequest,
         ]);
@@ -144,11 +108,7 @@ class LeaveRequestController extends Controller
         $end = \Carbon\Carbon::parse($validated['end_date']);
         $validated['days'] = $end->diffInDays($start) + 1;
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leaveRequests()->update($leaveRequest->id, $validated);
-        } else {
-            $leaveRequest->update($validated);
-        }
+        $leaveRequest->update($validated);
 
         return redirect()->route('vacation.index')
             ->with('success', 'Urlaubsantrag erfolgreich aktualisiert.');
@@ -159,17 +119,11 @@ class LeaveRequestController extends Controller
      */
     public function approve(LeaveRequest $leaveRequest)
     {
-        $validated = [
+        $leaveRequest->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
-        ];
-
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leaveRequests()->update($leaveRequest->id, $validated);
-        } else {
-            $leaveRequest->update($validated);
-        }
+        ]);
 
         return redirect()->back()
             ->with('success', 'Urlaubsantrag genehmigt.');
@@ -184,18 +138,12 @@ class LeaveRequestController extends Controller
             'rejection_reason' => 'required|string',
         ]);
 
-        $data = [
+        $leaveRequest->update([
             'status' => 'rejected',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'rejection_reason' => $validated['rejection_reason'],
-        ];
-
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leaveRequests()->update($leaveRequest->id, $data);
-        } else {
-            $leaveRequest->update($data);
-        }
+        ]);
 
         return redirect()->back()
             ->with('success', 'Urlaubsantrag abgelehnt.');
@@ -206,11 +154,7 @@ class LeaveRequestController extends Controller
      */
     public function destroy(LeaveRequest $leaveRequest)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::leaveRequests()->delete($leaveRequest->id);
-        } else {
-            $leaveRequest->delete();
-        }
+        $leaveRequest->delete();
 
         return redirect()->route('vacation.index')
             ->with('success', 'Urlaubsantrag erfolgreich gelöscht.');

@@ -20,22 +20,17 @@ class EnvManager
      */
     public function isInstalled(): bool
     {
-        // Check if .env file exists
-        if (!File::exists($this->envPath)) {
+        // Check if APP_KEY is set
+        $appKey = config('app.key');
+        if (empty($appKey)) {
             return false;
         }
 
-        // Check if APP_KEY is set
-        $appKey = config('app.key');
-        if (empty($appKey) || str_starts_with($appKey, 'base64:')) {
-            // Need to check if it's a valid key
-            if (empty($appKey)) {
-                return false;
-            }
-        }
-
-        // Check if INSTALLED flag is set
-        if (!$this->getEnv('INSTALLED')) {
+        // Check INSTALLED flag: config (works after config:cache), .env file, or OS env var
+        $installed = config('app.installed')
+            || $this->getEnv('INSTALLED')
+            || getenv('INSTALLED');
+        if (!$installed) {
             return false;
         }
 
@@ -211,23 +206,33 @@ class EnvManager
             }
 
             // Test MySQL/PostgreSQL connection
+            $connConfig = [
+                'driver' => $connection === 'postgresql' ? 'pgsql' : $connection,
+                'host' => $host ?? '127.0.0.1',
+                'port' => $port ?? ($connection === 'pgsql' || $connection === 'postgresql' ? 5432 : 3306),
+                'database' => $database,
+                'username' => $username ?? 'root',
+                'password' => $password ?? '',
+                'prefix' => '',
+            ];
+
+            if ($connection === 'pgsql' || $connection === 'postgresql') {
+                $connConfig['charset'] = 'utf8';
+                $connConfig['search_path'] = 'public';
+                $connConfig['sslmode'] = 'prefer';
+            } else {
+                $connConfig['charset'] = 'utf8mb4';
+                $connConfig['collation'] = 'utf8mb4_unicode_ci';
+                $connConfig['strict'] = true;
+                $connConfig['engine'] = null;
+            }
+
+            $connName = $connection === 'postgresql' ? 'pgsql' : $connection;
             config([
-                'database.connections.' . $connection => [
-                    'driver' => $connection,
-                    'host' => $host ?? '127.0.0.1',
-                    'port' => $port ?? ($connection === 'mysql' ? 3306 : 5432),
-                    'database' => $database,
-                    'username' => $username ?? 'root',
-                    'password' => $password ?? '',
-                    'charset' => 'utf8mb4',
-                    'collation' => 'utf8mb4_unicode_ci',
-                    'prefix' => '',
-                    'strict' => true,
-                    'engine' => null,
-                ],
+                'database.connections.' . $connName => $connConfig,
             ]);
 
-            DB::connection($connection)->getPdo();
+            DB::connection($connName)->getPdo();
 
             return ['success' => true, 'message' => ucfirst($connection) . ' connection successful'];
         } catch (\Exception $e) {
@@ -273,25 +278,20 @@ class EnvManager
     public function createChatTable(): void
     {
         try {
-            $dbDriver = config('database.default');
-
-            if ($dbDriver === 'mysql') {
-                \Illuminate\Support\Facades\DB::statement("
-                    CREATE TABLE IF NOT EXISTS chat_messages (
-                        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                        sender_id BIGINT UNSIGNED NOT NULL,
-                        receiver_id BIGINT UNSIGNED NOT NULL,
-                        message TEXT NOT NULL,
-                        is_read TINYINT(1) DEFAULT 0,
-                        created_at TIMESTAMP NULL,
-                        updated_at TIMESTAMP NULL,
-                        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-                        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                ");
+            if (\Illuminate\Support\Facades\Schema::hasTable('chat_messages')) {
+                return;
             }
+
+            \Illuminate\Support\Facades\Schema::create('chat_messages', function (\Illuminate\Database\Schema\Blueprint $table) {
+                $table->id();
+                $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+                $table->text('message');
+                $table->boolean('is_read')->default(false);
+                $table->timestamps();
+            });
         } catch (\Exception $e) {
-            // Ignore errors
+            // Ignore errors - table may already exist from migration
         }
     }
 }

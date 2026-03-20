@@ -49,29 +49,6 @@ Route::get('/', function () {
     ]);
 });
 
-// Test Supabase connection
-Route::get('/test-supabase', function () {
-    try {
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'apikey' => config('services.supabase.anon_key'),
-            'Authorization' => 'Bearer ' . config('services.supabase.anon_key'),
-        ])->withOptions(['verify' => false])->get(config('services.supabase.url') . '/rest/v1/users', [
-            'select' => 'count',
-            'limit' => 1,
-        ]);
-
-        return response()->json([
-            'status' => $response->successful() ? 'connected' : 'error',
-            'code' => $response->status(),
-            'tables' => 'OK',
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ]);
-    }
-});
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'installed'])
@@ -98,7 +75,7 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::post('vacation/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->name('vacation.reject');
     Route::resource('notes', NoteController::class)->only(['index', 'store', 'update', 'destroy', 'show', 'create', 'edit']);
     Route::post('notes/{note}/toggle-pin', [NoteController::class, 'togglePin'])->name('notes.togglePin');
-    Route::resource('inventory', InventoryController::class)->only(['index', 'store', 'update', 'destroy', 'show', 'create', 'edit']);
+    Route::resource('inventory', InventoryController::class)->only(['index', 'store', 'update', 'destroy', 'show', 'create', 'edit'])->parameters(['inventory' => 'item']);
     Route::post('inventory/{item}/movement', [InventoryController::class, 'recordMovement'])->name('inventory.movement');
     Route::resource('tickets', TicketController::class)->only(['index', 'store', 'update', 'destroy', 'show', 'create', 'edit']);
     Route::post('tickets/{ticket}/comment', [TicketController::class, 'addComment'])->name('tickets.comment');
@@ -122,6 +99,7 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::delete('email/{emailId}', [EmailController::class, 'destroy'])->name('email.destroy');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::put('users/{id}', [UserController::class, 'update'])->name('users.update');
     Route::post('users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
     Route::post('users/{id}/disapprove', [UserController::class, 'disapprove'])->name('users.disapprove');
     Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
@@ -135,8 +113,7 @@ Route::middleware(['auth', 'verified', 'installed'])->group(function () {
     Route::get('permissions', [RoleController::class, 'permissions'])->name('permissions.index');
     Route::get('integrations', [SettingsController::class, 'integrations'])->name('integrations.index');
     Route::get('database', [SettingsController::class, 'database'])->name('database.index');
-    Route::post('database/execute', [SettingsController::class, 'executeSql'])->name('database.execute');
-    Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache');
+Route::post('database/clear-cache', [SettingsController::class, 'clearCache'])->name('database.clearCache');
     Route::post('database/optimize', [SettingsController::class, 'optimizeDatabase'])->name('database.optimize');
     Route::post('database/backup', [SettingsController::class, 'createBackup'])->name('database.backup');
 

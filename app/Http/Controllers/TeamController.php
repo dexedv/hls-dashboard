@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Label;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -16,67 +14,22 @@ class TeamController extends Controller
      */
     public function index(Request $request)
     {
-        $useSupabase = SupabaseHelper::useSupabase();
-
-        // Get labels - try Supabase first, fall back to local DB
-        $labels = [];
-        if ($useSupabase) {
-            try {
-                $labels = SupabaseRepository::labels()->all()->toArray();
-            } catch (\Exception $e) {
-                // Fall back to local DB if Supabase fails
-                $useSupabase = false;
+        // Create default labels if none exist
+        $localLabels = Label::all();
+        if ($localLabels->isEmpty()) {
+            $defaultLabels = [
+                ['name' => 'Außendienst', 'slug' => 'aussendienst', 'color' => '#10b981'],
+                ['name' => 'Innendienst', 'slug' => 'innendienst', 'color' => '#3b82f6'],
+                ['name' => 'Techniker', 'slug' => 'techniker', 'color' => '#f59e0b'],
+                ['name' => 'Vertrieb', 'slug' => 'vertrieb', 'color' => '#8b5cf6'],
+                ['name' => 'Support', 'slug' => 'support', 'color' => '#ec4899'],
+                ['name' => 'Verwaltung', 'slug' => 'verwaltung', 'color' => '#6b7280'],
+            ];
+            foreach ($defaultLabels as $labelData) {
+                Label::firstOrCreate(['slug' => $labelData['slug']], $labelData);
             }
         }
-
-        if (!$useSupabase) {
-            // Create default labels if none exist
-            $localLabels = Label::all();
-            if ($localLabels->isEmpty()) {
-                $defaultLabels = [
-                    ['name' => 'Außendienst', 'slug' => 'aussendienst', 'color' => '#10b981'],
-                    ['name' => 'Innendienst', 'slug' => 'innendienst', 'color' => '#3b82f6'],
-                    ['name' => 'Techniker', 'slug' => 'techniker', 'color' => '#f59e0b'],
-                    ['name' => 'Vertrieb', 'slug' => 'vertrieb', 'color' => '#8b5cf6'],
-                    ['name' => 'Support', 'slug' => 'support', 'color' => '#ec4899'],
-                    ['name' => 'Verwaltung', 'slug' => 'verwaltung', 'color' => '#6b7280'],
-                ];
-                foreach ($defaultLabels as $labelData) {
-                    Label::firstOrCreate(['slug' => $labelData['slug']], $labelData);
-                }
-            }
-            $labels = Label::all()->toArray();
-        }
-
-        if ($useSupabase) {
-            $users = SupabaseRepository::users()->all();
-
-            // Get user_labels to attach to users
-            $allUserLabels = [];
-            try {
-                $allUserLabels = SupabaseRepository::userLabels()->get()->toArray();
-            } catch (\Exception $e) {
-                // Tables might not exist
-            }
-
-            $allLabels = collect($labels)->keyBy('id')->toArray();
-
-            // Attach labels to each user
-            $users = $users->map(function ($user) use ($allLabels, $allUserLabels) {
-                $userLabelIds = array_filter($allUserLabels, fn($ul) => $ul['user_id'] == $user['id']);
-                $user['labels'] = array_values(array_map(function($ul) use ($allLabels) {
-                    return $allLabels[$ul['label_id']] ?? null;
-                }, array_filter($userLabelIds, fn($ul) => isset($allLabels[$ul['label_id']]))));
-                return $user;
-            });
-
-            $users = SupabaseHelper::toPaginated($users, 10);
-
-            return Inertia::render('Team/Index', [
-                'users' => $users,
-                'labels' => $labels,
-            ]);
-        }
+        $labels = Label::all()->toArray();
 
         $users = User::with('labels')->orderBy('name', 'asc')->paginate(10);
 
@@ -132,38 +85,14 @@ class TeamController extends Controller
 
         $validated['password'] = bcrypt($validated['password']);
 
-        if (SupabaseHelper::useSupabase()) {
-            // Only send fields that exist in Supabase users table
-            $userData = [
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'role' => $validated['role'] ?? 'employee',
-            ];
-            if (!empty($validated['phone'])) {
-                $userData['phone'] = $validated['phone'];
-            }
-            $user = SupabaseRepository::users()->create($userData);
+        if (auth()->check()) {
+            $validated['created_by'] = auth()->id();
+        }
+        $user = User::create($validated);
 
-            // Attach labels via pivot table
-            if (!empty($labels)) {
-                foreach ($labels as $labelId) {
-                    SupabaseRepository::userLabels()->create([
-                        'user_id' => $user['id'],
-                        'label_id' => $labelId,
-                    ]);
-                }
-            }
-        } else {
-            if (auth()->check()) {
-                $validated['created_by'] = auth()->id();
-            }
-            $user = User::create($validated);
-
-            // Attach labels
-            if (!empty($labels)) {
-                $user->labels()->attach($labels);
-            }
+        // Attach labels
+        if (!empty($labels)) {
+            $user->labels()->attach($labels);
         }
 
         return redirect()->route('team.index')
@@ -175,13 +104,6 @@ class TeamController extends Controller
      */
     public function show(User $user)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $user = SupabaseRepository::users()->find($user->id);
-            return Inertia::render('Team/Show', [
-                'user' => $user,
-            ]);
-        }
-
         return Inertia::render('Team/Show', [
             'user' => $user,
         ]);
@@ -242,34 +164,9 @@ class TeamController extends Controller
             unset($validated['password']);
         }
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::users()->update($id, $validated);
-
-            // Update labels - first delete old, then add new
-            try {
-                $allUserLabels = SupabaseRepository::userLabels()->get();
-                $existingLabels = $allUserLabels->filter(function($ul) use ($id) {
-                    return $ul['user_id'] == $id;
-                });
-
-                foreach ($existingLabels as $existingLabel) {
-                    SupabaseRepository::userLabels()->delete($existingLabel['id']);
-                }
-
-                foreach ($labels as $labelId) {
-                    SupabaseRepository::userLabels()->create([
-                        'user_id' => $id,
-                        'label_id' => $labelId,
-                    ]);
-                }
-            } catch (\Exception $e) {
-                // Ignore label errors
-            }
-        } else {
-            $user = User::findOrFail($id);
-            $user->update($validated);
-            $user->labels()->sync($labels);
-        }
+        $user = User::findOrFail($id);
+        $user->update($validated);
+        $user->labels()->sync($labels);
 
         return redirect()->route('team.index')
             ->with('success', 'Teammitglied erfolgreich aktualisiert.');
@@ -280,12 +177,8 @@ class TeamController extends Controller
      */
     public function destroy($id)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::users()->delete($id);
-        } else {
-            $user = User::findOrFail($id);
-            $user->delete();
-        }
+        $user = User::findOrFail($id);
+        $user->delete();
 
         return redirect()->route('team.index')
             ->with('success', 'Teammitglied erfolgreich gelöscht.');

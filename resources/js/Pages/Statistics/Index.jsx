@@ -1,16 +1,105 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link } from '@inertiajs/react';
 import PageHeader from '@/Components/PageHeader';
+import {
+    BarChart, Bar, PieChart, Pie, LineChart, Line,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend
+} from 'recharts';
 
-export default function StatisticsIndex() {
-    const stats = [
-        { label: 'Kunden', value: 0, href: '/customers', color: 'text-blue-600', bgColor: 'bg-blue-50', hoverBg: 'hover:bg-blue-100' },
-        { label: 'Projekte', value: 0, href: '/projects', color: 'text-green-600', bgColor: 'bg-green-50', hoverBg: 'hover:bg-green-100' },
-        { label: 'Aufgaben', value: 0, href: '/tasks', color: 'text-purple-600', bgColor: 'bg-purple-50', hoverBg: 'hover:bg-purple-100' },
-        { label: 'Leads', value: 0, href: '/leads', color: 'text-orange-600', bgColor: 'bg-orange-50', hoverBg: 'hover:bg-orange-100' },
-        { label: 'Tickets', value: 0, href: '/tickets', color: 'text-red-600', bgColor: 'bg-red-50', hoverBg: 'hover:bg-red-100' },
-        { label: 'Teammitglieder', value: 0, href: '/team', color: 'text-cyan-600', bgColor: 'bg-cyan-50', hoverBg: 'hover:bg-cyan-100' },
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+const statusLabels = {
+    // Projects
+    planning: 'Planung',
+    active: 'Aktiv',
+    completed: 'Abgeschlossen',
+    on_hold: 'Pausiert',
+    cancelled: 'Abgebrochen',
+    // Tasks
+    todo: 'Offen',
+    in_progress: 'In Arbeit',
+    review: 'Review',
+    done: 'Erledigt',
+    // Leads
+    new: 'Neu',
+    contacted: 'Kontaktiert',
+    qualified: 'Qualifiziert',
+    proposal: 'Angebot',
+    won: 'Gewonnen',
+    lost: 'Verloren',
+};
+
+function ChartCard({ title, children }) {
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+            {children}
+        </div>
+    );
+}
+
+function KpiCard({ label, value, href, color, bgColor }) {
+    const content = (
+        <div className={`${bgColor} rounded-lg p-3 mb-3 inline-block`}>
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+        </div>
+    );
+
+    if (href) {
+        return (
+            <Link href={href} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:border-primary-500 hover:shadow-md transition-all duration-200">
+                {content}
+                <p className="text-sm text-gray-600 font-medium">{label}</p>
+            </Link>
+        );
+    }
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            {content}
+            <p className="text-sm text-gray-600 font-medium">{label}</p>
+        </div>
+    );
+}
+
+function mapToChartData(obj) {
+    return Object.entries(obj || {}).map(([key, value]) => ({
+        name: statusLabels[key] || key,
+        value: value,
+    }));
+}
+
+export default function StatisticsIndex({ stats, projectsByStatus, tasksByStatus, leadsByStatus, monthlyRevenue }) {
+    const kpis = [
+        { label: 'Kunden', value: stats?.customers || 0, href: '/customers', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+        { label: 'Projekte', value: stats?.projects || 0, href: '/projects', color: 'text-green-600', bgColor: 'bg-green-50' },
+        { label: 'Aufgaben', value: stats?.tasks || 0, href: '/tasks', color: 'text-purple-600', bgColor: 'bg-purple-50' },
+        { label: 'Leads', value: stats?.leads || 0, href: '/leads', color: 'text-orange-600', bgColor: 'bg-orange-50' },
+        { label: 'Tickets', value: stats?.tickets || 0, href: '/tickets', color: 'text-red-600', bgColor: 'bg-red-50' },
+        { label: 'Umsatz', value: `${((stats?.revenue || 0) / 1000).toFixed(1)}k`, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
     ];
+
+    const projectChartData = mapToChartData(projectsByStatus);
+    const taskChartData = mapToChartData(tasksByStatus);
+    const leadChartData = mapToChartData(leadsByStatus);
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">{label}</p>
+                    {payload.map((entry, index) => (
+                        <p key={index} className="text-sm" style={{ color: entry.color }}>
+                            {entry.name}: {typeof entry.value === 'number' && entry.value > 100
+                                ? entry.value.toLocaleString('de-DE') + ' \u20AC'
+                                : entry.value}
+                        </p>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <DashboardLayout title="Statistiken">
@@ -21,36 +110,121 @@ export default function StatisticsIndex() {
                 subtitle="Berichte und Analysen"
             />
 
-            {/* Overview Stats */}
+            {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-                {stats.map((stat) => (
-                    <Link
-                        key={stat.label}
-                        href={stat.href}
-                        className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:border-primary-500 hover:shadow-md transition-all duration-200 ${stat.hoverBg}`}
-                    >
-                        <div className={`${stat.bgColor} rounded-lg p-3 mb-3 inline-block`}>
-                            <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                        </div>
-                        <p className="text-sm text-gray-600 font-medium">{stat.label}</p>
-                    </Link>
+                {kpis.map((kpi) => (
+                    <KpiCard key={kpi.label} {...kpi} />
                 ))}
             </div>
 
-            {/* Coming Soon Notice */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
-                <div className="text-center">
-                    <div className="h-20 w-20 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-10 h-10 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Detaillierte Statistiken</h3>
-                    <p className="text-gray-500 max-w-md mx-auto">
-                        Detaillierte Berichte und Analysen werden in Kuerze verfuegbar sein.
-                        Nutzen Sie die Navigation, um die verschiedenen Module zu erkunden.
-                    </p>
+            {/* Additional KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <p className="text-sm text-gray-500">Offene Aufgaben</p>
+                    <p className="text-2xl font-bold text-amber-600">{stats?.openTasks || 0}</p>
                 </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <p className="text-sm text-gray-500">Erledigte Aufgaben</p>
+                    <p className="text-2xl font-bold text-green-600">{stats?.completedTasks || 0}</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <p className="text-sm text-gray-500">Aktive Projekte</p>
+                    <p className="text-2xl font-bold text-blue-600">{stats?.activeProjects || 0}</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <p className="text-sm text-gray-500">Lead-Konversion</p>
+                    <p className="text-2xl font-bold text-purple-600">{stats?.leadConversionRate || 0}%</p>
+                </div>
+            </div>
+
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Monthly Revenue */}
+                <ChartCard title="Monatlicher Umsatz">
+                    {monthlyRevenue && monthlyRevenue.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={monthlyRevenue}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} name="Umsatz" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-[300px] flex items-center justify-center text-gray-400">Keine Daten vorhanden</div>
+                    )}
+                </ChartCard>
+
+                {/* Projects by Status */}
+                <ChartCard title="Projekte nach Status">
+                    {projectChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={projectChartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                                <Tooltip />
+                                <Bar dataKey="value" name="Anzahl" radius={[4, 4, 0, 0]}>
+                                    {projectChartData.map((_, index) => (
+                                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-[300px] flex items-center justify-center text-gray-400">Keine Daten vorhanden</div>
+                    )}
+                </ChartCard>
+
+                {/* Tasks by Status */}
+                <ChartCard title="Aufgaben nach Status">
+                    {taskChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                <Pie
+                                    data={taskChartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    label={({ name, value }) => `${name}: ${value}`}
+                                >
+                                    {taskChartData.map((_, index) => (
+                                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-[300px] flex items-center justify-center text-gray-400">Keine Daten vorhanden</div>
+                    )}
+                </ChartCard>
+
+                {/* Leads by Status */}
+                <ChartCard title="Leads nach Status">
+                    {leadChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={leadChartData} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
+                                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} />
+                                <Tooltip />
+                                <Bar dataKey="value" name="Anzahl" radius={[0, 4, 4, 0]}>
+                                    {leadChartData.map((_, index) => (
+                                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-[300px] flex items-center justify-center text-gray-400">Keine Daten vorhanden</div>
+                    )}
+                </ChartCard>
             </div>
         </DashboardLayout>
     );

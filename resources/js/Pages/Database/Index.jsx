@@ -1,7 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
+import PageHeader, { Button } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 
@@ -9,13 +9,10 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
     const { auth } = usePage().props;
     const userPermissions = auth?.permissions || {};
     const [searchQuery, setSearchQuery] = useState('');
-    const [sqlQuery, setSqlQuery] = useState('');
-    const [queryResult, setQueryResult] = useState(null);
-    const [queryError, setQueryError] = useState(null);
-    const [isExecuting, setIsExecuting] = useState(false);
     const [maintenanceAction, setMaintenanceAction] = useState(null);
+    const [resultMessage, setResultMessage] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
 
-    // This page should only be accessible if user has database.access permission
     const hasAccess = userPermissions['database.access'];
 
     if (!hasAccess) {
@@ -41,47 +38,10 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
         );
     }
 
-    const executeQuery = async () => {
-        if (!sqlQuery.trim()) return;
-
-        setIsExecuting(true);
-        setQueryResult(null);
-        setQueryError(null);
-
-        try {
-            // Get CSRF token from cookie
-            const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]
-                ? decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)[1])
-                : document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-            const response = await fetch(route('database.execute'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ query: sqlQuery }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                setQueryResult(data);
-            } else {
-                setQueryError(data.error || 'Unbekannter Fehler');
-            }
-        } catch (err) {
-            setQueryError(err.message || 'Netzwerkfehler');
-        } finally {
-            setIsExecuting(false);
-        }
-    };
-
     const handleMaintenance = async (action) => {
         setMaintenanceAction(action);
-        setQueryError(null);
-        setQueryResult(null);
+        setErrorMessage(null);
+        setResultMessage(null);
 
         const routes = {
             cache: 'database.clearCache',
@@ -90,7 +50,6 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
         };
 
         try {
-            // Get CSRF token from cookie
             const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]
                 ? decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)[1])
                 : document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -107,18 +66,17 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
             const data = await response.json();
 
             if (data.success) {
-                setQueryResult(data);
+                setResultMessage(data.message);
             } else {
-                setQueryError(data.error || 'Unbekannter Fehler');
+                setErrorMessage(data.error || 'Unbekannter Fehler');
             }
         } catch (err) {
-            setQueryError(err.message || 'Netzwerkfehler');
+            setErrorMessage(err.message || 'Netzwerkfehler');
         } finally {
             setMaintenanceAction(null);
         }
     };
 
-    // Filter tables based on search
     const filteredTables = (dbTables || []).filter(table =>
         !searchQuery || table.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -168,120 +126,6 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
                 </div>
             )}
 
-            {/* Warning Box */}
-            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start">
-                    <svg className="h-5 w-5 text-amber-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <div>
-                        <h3 className="text-sm font-medium text-amber-800">Sensibler Bereich</h3>
-                        <p className="text-sm text-amber-700 mt-1">
-                            Dieser Bereich ist nur für Administratoren zugänglich.
-                            Vorsicht bei Datenbankänderungen!
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* SQL Editor */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                    <h2 className="text-lg font-semibold text-gray-900">SQL-Befehl ausführen</h2>
-                    <p className="text-sm text-gray-500 mt-1">Führen Sie SQL-Befehle direkt auf der Datenbank aus</p>
-                </div>
-                <div className="p-6">
-                    <textarea
-                        value={sqlQuery}
-                        onChange={(e) => setSqlQuery(e.target.value)}
-                        placeholder="SELECT * FROM users LIMIT 10;&#10;UPDATE users SET is_approved = 1 WHERE ...&#10;ALTER TABLE users ADD COLUMN ..."
-                        className="w-full h-32 border border-gray-200 rounded-lg px-4 py-3 font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-y"
-                    />
-                    <div className="mt-4 flex gap-3">
-                        <Button
-                            onClick={executeQuery}
-                            disabled={!sqlQuery.trim() || isExecuting || !database?.connected}
-                            variant="primary"
-                        >
-                            {isExecuting ? 'Wird ausgeführt...' : 'Ausführen'}
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                setSqlQuery('');
-                                setQueryResult(null);
-                                setQueryError(null);
-                            }}
-                            variant="secondary"
-                        >
-                            Leeren
-                        </Button>
-                    </div>
-
-                    {/* Quick Commands */}
-                    <div className="mt-4">
-                        <p className="text-xs text-gray-500 mb-2">Schnellbefehle:</p>
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                onClick={() => setSqlQuery('SELECT * FROM users LIMIT 10;')}
-                                className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                            >
-                                Alle Benutzer
-                            </button>
-                            <button
-                                onClick={() => setSqlQuery('SELECT * FROM users WHERE is_approved = 0;')}
-                                className="px-3 py-1 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-full transition-colors"
-                            >
-                                Unfreigeschaltete
-                            </button>
-                            <button
-                                onClick={() => setSqlQuery('ALTER TABLE users ADD COLUMN is_approved TINYINT(1) DEFAULT 0;')}
-                                className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-full transition-colors"
-                            >
-                                is_approved hinzufügen
-                            </button>
-                            <button
-                                onClick={() => setSqlQuery("UPDATE users SET is_approved = 1 WHERE role IN ('owner', 'admin', 'manager', 'employee');")}
-                                className="px-3 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-800 rounded-full transition-colors"
-                            >
-                                Alle freischalten
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Results */}
-                    {queryError && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-center">
-                                <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p className="text-sm font-medium text-red-800">Fehler: {queryError}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {queryResult && (
-                        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center mb-2">
-                                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <p className="text-sm font-medium text-green-800">
-                                    {queryResult.message || `${queryResult.rows} Zeile(n) gefunden`}
-                                </p>
-                            </div>
-                            {queryResult.data && queryResult.data.length > 0 && (
-                                <div className="mt-3 overflow-x-auto">
-                                    <pre className="text-xs bg-white p-3 rounded border border-green-100 overflow-x-auto">
-                                        {JSON.stringify(queryResult.data, null, 2)}
-                                    </pre>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
             {/* Database Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
@@ -318,7 +162,6 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Zeilen</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Größe</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Engine</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -330,15 +173,6 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
                                         <td className="px-6 py-4 text-sm text-gray-500 text-right">{(table.rows || 0).toLocaleString()}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500 text-right">{table.size || '0 B'}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">{table.engine || 'N/A'}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="secondary"
-                                                className="text-sm py-1.5"
-                                                onClick={() => setSqlQuery(`SELECT * FROM \`${table.name}\` LIMIT 10;`)}
-                                            >
-                                                Ansehen
-                                            </Button>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -356,6 +190,18 @@ export default function DatabaseIndex({ database, tables: dbTables, stats }) {
             {/* Maintenance */}
             <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Wartung</h2>
+
+                {errorMessage && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm font-medium text-red-800">Fehler: {errorMessage}</p>
+                    </div>
+                )}
+                {resultMessage && (
+                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm font-medium text-green-800">{resultMessage}</p>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Button
                         variant="secondary"

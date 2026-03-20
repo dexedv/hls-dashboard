@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Label;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,17 +10,7 @@ class LabelController extends Controller
 {
     public function index()
     {
-        $useSupabase = SupabaseHelper::useSupabase();
-
-        if ($useSupabase) {
-            try {
-                $labels = SupabaseRepository::labels()->get()->toArray();
-            } catch (\Exception $e) {
-                $labels = [];
-            }
-        } else {
-            $labels = Label::all()->toArray();
-        }
+        $labels = Label::all()->toArray();
 
         // Fallback to default labels if empty
         if (empty($labels)) {
@@ -52,15 +40,7 @@ class LabelController extends Controller
             'color' => 'required|string|max:20',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            try {
-                SupabaseRepository::labels()->create($validated);
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Fehler beim Erstellen des Labels: ' . $e->getMessage());
-            }
-        } else {
-            Label::create($validated);
-        }
+        Label::create($validated);
 
         return redirect()->route('labels.index')
             ->with('success', 'Label erfolgreich erstellt.');
@@ -77,15 +57,7 @@ class LabelController extends Controller
             'color' => 'required|string|max:20',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            try {
-                SupabaseRepository::labels()->update($id, $validated);
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Fehler beim Aktualisieren des Labels: ' . $e->getMessage());
-            }
-        } else {
-            Label::findOrFail($id)->update($validated);
-        }
+        Label::findOrFail($id)->update($validated);
 
         return redirect()->route('labels.index')
             ->with('success', 'Label erfolgreich aktualisiert.');
@@ -96,15 +68,7 @@ class LabelController extends Controller
      */
     public function destroy($id)
     {
-        if (SupabaseHelper::useSupabase()) {
-            try {
-                SupabaseRepository::labels()->delete($id);
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Fehler beim Löschen des Labels: ' . $e->getMessage());
-            }
-        } else {
-            Label::findOrFail($id)->delete();
-        }
+        Label::findOrFail($id)->delete();
 
         return redirect()->route('labels.index')
             ->with('success', 'Label erfolgreich gelöscht.');

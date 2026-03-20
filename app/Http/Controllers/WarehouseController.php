@@ -2,69 +2,77 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\SupabaseHelper;
-use App\Repositories\SupabaseRepository;
+use App\Models\Inventory;
+use App\Models\InventoryMovement;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class WarehouseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $inventories = SupabaseRepository::inventories()->all();
-            $stats = [
-                'totalItems' => $inventories->count(),
-                'lowStock' => $inventories->filter(function($item) {
-                    return ($item['current_stock'] ?? 0) < ($item['min_stock'] ?? 0);
-                })->count(),
-            ];
-        } else {
-            $stats = [
-                'totalItems' => 0,
-                'lowStock' => 0,
-            ];
+        $allItems = Inventory::all();
+
+        $stats = [
+            'totalItems' => $allItems->count(),
+            'lowStock' => $allItems->filter(fn($item) => $item->isLowStock())->count(),
+            'totalValue' => $allItems->sum(fn($item) => $item->current_stock * ($item->unit_price ?? 0)),
+        ];
+
+        $query = Inventory::query();
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'ilike', "%{$request->search}%")
+                    ->orWhere('sku', 'ilike', "%{$request->search}%");
+            });
         }
+
+        $items = $query->orderBy('name')
+            ->paginate(25)
+            ->withQueryString();
+
+        $recentMovements = InventoryMovement::with('inventory')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        // All items for dropdown (unpaginated)
+        $allItemsList = Inventory::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Warehouse/Index', [
             'stats' => $stats,
-            'items' => $inventories ?? [],
+            'items' => $items,
+            'allItems' => $allItemsList,
+            'recentMovements' => $recentMovements,
+            'filters' => $request->only(['search']),
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'item_id' => 'required',
+            'item_id' => 'required|exists:inventories,id',
             'movement_type' => 'required|in:in,out,adjustment,transfer',
             'quantity' => 'required|numeric|min:1',
             'unit_cost' => 'nullable|numeric',
-            'supplier_id' => 'nullable',
-            'notes' => 'nullable',
+            'notes' => 'nullable|string',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::inventoryMovements()->create([
-                'item_id' => $validated['item_id'],
-                'movement_type' => $validated['movement_type'],
-                'quantity' => $validated['quantity'],
-                'unit_cost' => $validated['unit_cost'] ?? 0,
-                'supplier_id' => $validated['supplier_id'] ?? null,
-                'notes' => $validated['notes'] ?? '',
-                'movement_date' => now()->toISOString(),
-            ]);
+        InventoryMovement::create([
+            'inventory_id' => $validated['item_id'],
+            'type' => $validated['movement_type'],
+            'quantity' => $validated['quantity'],
+            'unit_cost' => $validated['unit_cost'] ?? 0,
+            'notes' => $validated['notes'] ?? '',
+            'created_by' => auth()->id(),
+        ]);
 
-            // Update inventory stock
-            $inventory = SupabaseRepository::inventories()->find($validated['item_id']);
-            if ($inventory) {
-                $currentStock = $inventory['current_stock'] ?? 0;
-                $change = $validated['movement_type'] === 'in' ? $validated['quantity'] : -$validated['quantity'];
-                SupabaseRepository::inventories()->update($validated['item_id'], [
-                    'current_stock' => $currentStock + $change,
-                ]);
-            }
-        }
+        // Update stock
+        $inventory = Inventory::findOrFail($validated['item_id']);
+        $change = $validated['movement_type'] === 'in' ? $validated['quantity'] : -$validated['quantity'];
+        $inventory->increment('current_stock', $change);
 
-        return redirect('/warehouse')->with('success', 'Lagerbewegung erstellt');
+        return redirect('/warehouse')->with('success', 'Lagerbewegung erstellt.');
     }
 }

@@ -469,9 +469,7 @@ class LexwareService
         $url = $this->baseUrl . $endpoint;
 
         // Use Guzzle directly for reliable JSON encoding
-        $client = new \GuzzleHttp\Client([
-            'verify' => false,
-        ]);
+        $client = new \GuzzleHttp\Client();
 
         $requestOptions = [
             'headers' => [

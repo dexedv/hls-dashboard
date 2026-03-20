@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Customer;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,41 +15,12 @@ class NoteController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $notes = SupabaseRepository::notes()->all();
-
-            if ($request->search) {
-                $search = strtolower($request->search);
-                $notes = $notes->filter(function($n) use ($search) {
-                    return str_contains(strtolower($n['title'] ?? ''), $search) ||
-                           str_contains(strtolower($n['content'] ?? ''), $search);
-                });
-            }
-
-            // Get pinned notes
-            $pinned = $notes->filter(function($n) {
-                return isset($n['pinned']) && $n['pinned'] === true;
-            })->sortByDesc('created_at')->values();
-
-            $notes = SupabaseHelper::toPaginated($notes, 10);
-            $projects = SupabaseRepository::projects()->all();
-            $customers = SupabaseRepository::customers()->all();
-
-            return Inertia::render('Notes/Index', [
-                'notes' => $notes,
-                'pinned' => $pinned,
-                'projects' => $projects,
-                'customers' => $customers,
-                'filters' => $request->only(['search']),
-            ]);
-        }
-
         $query = Note::query();
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', "%{$request->search}%")
-                    ->orWhere('content', 'like', "%{$request->search}%");
+                $q->where('title', 'ilike', "%{$request->search}%")
+                    ->orWhere('content', 'ilike', "%{$request->search}%");
             });
         }
 
@@ -81,17 +50,6 @@ class NoteController extends Controller
      */
     public function create(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $projects = SupabaseRepository::projects()->all();
-            $customers = SupabaseRepository::customers()->all();
-            return Inertia::render('Notes/Create', [
-                'projects' => $projects,
-                'customers' => $customers,
-                'project_id' => $request->project_id,
-                'customer_id' => $request->customer_id,
-            ]);
-        }
-
         $projects = Project::all();
         $customers = Customer::all();
         return Inertia::render('Notes/Create', [
@@ -117,11 +75,7 @@ class NoteController extends Controller
 
         $validated['created_by'] = auth()->id();
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::notes()->create($validated);
-        } else {
-            Note::create($validated);
-        }
+        Note::create($validated);
 
         return redirect()->route('notes.index')
             ->with('success', 'Notiz erfolgreich erstellt.');
@@ -132,13 +86,6 @@ class NoteController extends Controller
      */
     public function show(Note $note)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $note = SupabaseRepository::notes()->find($note->id);
-            return Inertia::render('Notes/Show', [
-                'note' => $note,
-            ]);
-        }
-
         $note->load(['project', 'customer', 'creator']);
 
         return Inertia::render('Notes/Show', [
@@ -151,17 +98,6 @@ class NoteController extends Controller
      */
     public function edit(Note $note)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $note = SupabaseRepository::notes()->find($note->id);
-            $projects = SupabaseRepository::projects()->all();
-            $customers = SupabaseRepository::customers()->all();
-            return Inertia::render('Notes/Edit', [
-                'note' => $note,
-                'projects' => $projects,
-                'customers' => $customers,
-            ]);
-        }
-
         $projects = Project::all();
         $customers = Customer::all();
 
@@ -185,11 +121,7 @@ class NoteController extends Controller
             'pinned' => 'boolean',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::notes()->update($note->id, $validated);
-        } else {
-            $note->update($validated);
-        }
+        $note->update($validated);
 
         return redirect()->route('notes.index')
             ->with('success', 'Notiz erfolgreich aktualisiert.');
@@ -200,15 +132,9 @@ class NoteController extends Controller
      */
     public function togglePin(Note $note)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $currentNote = SupabaseRepository::notes()->find($note->id);
-            $pinned = isset($currentNote['pinned']) ? !$currentNote['pinned'] : true;
-            SupabaseRepository::notes()->update($note->id, ['pinned' => $pinned]);
-        } else {
-            $note->update([
-                'pinned' => !$note->pinned,
-            ]);
-        }
+        $note->update([
+            'pinned' => !$note->pinned,
+        ]);
 
         return redirect()->back();
     }
@@ -218,11 +144,7 @@ class NoteController extends Controller
      */
     public function destroy(Note $note)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::notes()->delete($note->id);
-        } else {
-            $note->delete();
-        }
+        $note->delete();
 
         return redirect()->route('notes.index')
             ->with('success', 'Notiz erfolgreich gelöscht.');

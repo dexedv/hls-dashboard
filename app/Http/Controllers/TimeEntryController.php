@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\TimeEntry;
 use App\Models\Project;
 use App\Models\Task;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,34 +15,6 @@ class TimeEntryController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $timeEntries = SupabaseRepository::timeEntries()->all();
-
-            if ($request->project_id) {
-                $timeEntries = $timeEntries->where('project_id', $request->project_id);
-            }
-
-            if ($request->date) {
-                $timeEntries = $timeEntries->filter(function($te) use ($request) {
-                    return isset($te['start_time']) && \Carbon\Carbon::parse($te['start_time'])->toDateString() === $request->date;
-                });
-            }
-
-            $timeEntries = SupabaseHelper::toPaginated($timeEntries, 10);
-            $projects = SupabaseRepository::projects()->all();
-
-            // Calculate totals
-            $allEntries = SupabaseRepository::timeEntries()->all();
-            $totalDuration = $allEntries->sum('duration');
-
-            return Inertia::render('TimeTracking/Index', [
-                'timeEntries' => $timeEntries,
-                'projects' => $projects,
-                'filters' => $request->only(['project_id', 'date']),
-                'totalDuration' => $totalDuration,
-            ]);
-        }
-
         $query = TimeEntry::query()->with(['project', 'task', 'user']);
 
         if ($request->project_id) {
@@ -77,17 +47,6 @@ class TimeEntryController extends Controller
      */
     public function create(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $projects = SupabaseRepository::projects()->all();
-            $tasks = SupabaseRepository::tasks()->all();
-            return Inertia::render('TimeTracking/Create', [
-                'projects' => $projects,
-                'tasks' => $tasks,
-                'project_id' => $request->project_id,
-                'task_id' => $request->task_id,
-            ]);
-        }
-
         $projects = Project::all();
         $tasks = Task::all();
         return Inertia::render('TimeTracking/Create', [
@@ -122,11 +81,7 @@ class TimeEntryController extends Controller
             $validated['duration'] = $end->diffInMinutes($start);
         }
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::timeEntries()->create($validated);
-        } else {
-            TimeEntry::create($validated);
-        }
+        TimeEntry::create($validated);
 
         return redirect()->route('time-tracking.index')
             ->with('success', 'Zeiteintrag erfolgreich erstellt.');
@@ -137,17 +92,6 @@ class TimeEntryController extends Controller
      */
     public function edit(TimeEntry $timeEntry)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $timeEntry = SupabaseRepository::timeEntries()->find($timeEntry->id);
-            $projects = SupabaseRepository::projects()->all();
-            $tasks = SupabaseRepository::tasks()->all();
-            return Inertia::render('TimeTracking/Edit', [
-                'timeEntry' => $timeEntry,
-                'projects' => $projects,
-                'tasks' => $tasks,
-            ]);
-        }
-
         $projects = Project::all();
         $tasks = Task::all();
 
@@ -180,11 +124,7 @@ class TimeEntryController extends Controller
             $validated['duration'] = $end->diffInMinutes($start);
         }
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::timeEntries()->update($timeEntry->id, $validated);
-        } else {
-            $timeEntry->update($validated);
-        }
+        $timeEntry->update($validated);
 
         return redirect()->route('time-tracking.index')
             ->with('success', 'Zeiteintrag erfolgreich aktualisiert.');
@@ -195,11 +135,7 @@ class TimeEntryController extends Controller
      */
     public function destroy(TimeEntry $timeEntry)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::timeEntries()->delete($timeEntry->id);
-        } else {
-            $timeEntry->delete();
-        }
+        $timeEntry->delete();
 
         return redirect()->route('time-tracking.index')
             ->with('success', 'Zeiteintrag erfolgreich gelöscht.');
@@ -210,20 +146,14 @@ class TimeEntryController extends Controller
      */
     public function start(Request $request)
     {
-        $validated = [
+        $timeEntry = TimeEntry::create([
             'user_id' => auth()->id(),
             'project_id' => $request->project_id,
             'task_id' => $request->task_id,
             'description' => $request->description,
             'start_time' => now(),
             'billable' => $request->billable ?? true,
-        ];
-
-        if (SupabaseHelper::useSupabase()) {
-            $timeEntry = SupabaseRepository::timeEntries()->create($validated);
-        } else {
-            $timeEntry = TimeEntry::create($validated);
-        }
+        ]);
 
         return redirect()->back()->with('activeTimer', $timeEntry);
     }
@@ -233,16 +163,10 @@ class TimeEntryController extends Controller
      */
     public function stop(TimeEntry $timeEntry)
     {
-        $validated = [
+        $timeEntry->update([
             'end_time' => now(),
             'duration' => now()->diffInMinutes($timeEntry->start_time),
-        ];
-
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::timeEntries()->update($timeEntry->id, $validated);
-        } else {
-            $timeEntry->update($validated);
-        }
+        ]);
 
         return redirect()->back();
     }

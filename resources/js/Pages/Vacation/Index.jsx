@@ -9,7 +9,7 @@ export default function VacationIndex({ leaveRequests, statuses = [] }) {
     const [showModal, setShowModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { data, setData, post, processing, reset } = useForm({
-        leave_type: 'vacation',
+        type: 'vacation',
         start_date: '',
         end_date: '',
         notes: '',
@@ -98,7 +98,7 @@ export default function VacationIndex({ leaveRequests, statuses = [] }) {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Urlaubsart</label>
-                                <select value={data.leave_type} onChange={e => setData('leave_type', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+                                <select value={data.type} onChange={e => setData('type', e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
                                     <option value="vacation">Urlaub</option>
                                     <option value="sick">Krankheit</option>
                                     <option value="other">Sonstiges</option>

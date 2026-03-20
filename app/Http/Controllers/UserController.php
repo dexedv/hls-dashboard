@@ -2,23 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\SupabaseHelper;
-use App\Repositories\SupabaseRepository;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $users = SupabaseRepository::users()->all();
-        } else {
-            $users = \App\Models\User::all();
+        $query = User::query();
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'ilike', "%{$request->search}%")
+                    ->orWhere('email', 'ilike', "%{$request->search}%");
+            });
         }
+
+        $users = $query->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('Users/Index', [
             'users' => $users,
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -28,7 +35,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'password' => 'nullable|string|min:8',
-            'role' => 'nullable|in:admin,manager,employee,viewer,owner',
+            'role' => 'nullable|in:owner,admin,manager,employee,viewer,support,finance,sales,guest',
             'permissions' => 'nullable|array',
         ]);
 
@@ -41,28 +48,12 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::users()->update($id, $validated);
+        $user = User::findOrFail($id);
+        $user->update($validated);
 
-            // Update user permissions
-            if (!empty($permissions)) {
-                // Store permissions in a separate table or user metadata
-                foreach ($permissions as $key => $value) {
-                    SupabaseRepository::userPermissions()->create([
-                        'user_id' => $id,
-                        'permission_key' => $key,
-                        'permission_value' => $value,
-                    ]);
-                }
-            }
-        } else {
-            $user = \App\Models\User::findOrFail($id);
-            $user->update($validated);
-
-            // Update permissions
-            if (!empty($permissions)) {
-                $user->permissions()->sync($permissions);
-            }
+        // Update permissions
+        if (!empty($permissions)) {
+            $user->permissions()->sync($permissions);
         }
 
         return redirect()->back()->with('success', 'Benutzer erfolgreich aktualisiert.');
@@ -73,7 +64,7 @@ class UserController extends Controller
      */
     public function approve(Request $request, $id)
     {
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
         $user->update(['is_approved' => true]);
 
         return redirect()->back()->with('success', 'Benutzer wurde freigeschaltet.');
@@ -84,7 +75,7 @@ class UserController extends Controller
      */
     public function disapprove(Request $request, $id)
     {
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
         $user->update(['is_approved' => false]);
 
         return redirect()->back()->with('success', 'Benutzer wurde deaktiviert.');

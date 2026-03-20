@@ -13,23 +13,23 @@ return new class extends Migration
     {
         // Add Lexware fields to customers table
         Schema::table('customers', function (Blueprint $table) {
-            $table->string('lexware_id')->nullable()->after('created_by');
-            $table->enum('sync_status', ['synced', 'pending', 'error'])->default('pending')->after('lexware_id');
-            $table->timestamp('last_synced_at')->nullable()->after('sync_status');
+            $table->string('lexware_id')->nullable();
+            $table->string('sync_status')->default('pending');
+            $table->timestamp('last_synced_at')->nullable();
         });
 
         // Add Lexware fields to invoices table
         Schema::table('invoices', function (Blueprint $table) {
-            $table->string('lexware_id')->nullable()->after('created_by');
-            $table->string('lexware_status')->nullable()->after('lexware_id');
-            $table->timestamp('last_synced_at')->nullable()->after('lexware_status');
+            $table->string('lexware_id')->nullable();
+            $table->string('lexware_status')->nullable();
+            $table->timestamp('last_synced_at')->nullable();
         });
 
         // Add Lexware fields to quotes table
         Schema::table('quotes', function (Blueprint $table) {
-            $table->string('lexware_id')->nullable()->after('created_by');
-            $table->string('lexware_status')->nullable()->after('lexware_id');
-            $table->timestamp('last_synced_at')->nullable()->after('lexware_status');
+            $table->string('lexware_id')->nullable();
+            $table->string('lexware_status')->nullable();
+            $table->timestamp('last_synced_at')->nullable();
         });
     }
 

@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Quote;
 use App\Models\Customer;
 use App\Models\Project;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,33 +16,10 @@ class QuoteController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $quotes = SupabaseRepository::quotes()->all();
-
-            if ($request->search) {
-                $search = strtolower($request->search);
-                $quotes = $quotes->filter(function($q) use ($search) {
-                    return str_contains(strtolower($q['number'] ?? ''), $search);
-                });
-            }
-
-            if ($request->status) {
-                $quotes = $quotes->where('status', $request->status);
-            }
-
-            $quotes = SupabaseHelper::toPaginated($quotes, 10);
-
-            return Inertia::render('Quotes/Index', [
-                'quotes' => $quotes,
-                'filters' => $request->only(['search', 'status']),
-                'statuses' => StatusHelper::quoteStatuses(),
-            ]);
-        }
-
         $query = Quote::query()->with('customer');
 
         if ($request->search) {
-            $query->where('number', 'like', "%{$request->search}%");
+            $query->where('number', 'ilike', "%{$request->search}%");
         }
 
         if ($request->status) {
@@ -55,8 +30,11 @@ class QuoteController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('Quotes/Index', [
             'quotes' => $quotes,
+            'customers' => $customers,
             'filters' => $request->only(['search', 'status']),
             'statuses' => StatusHelper::quoteStatuses(),
         ]);
@@ -67,17 +45,6 @@ class QuoteController extends Controller
      */
     public function create(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $customers = SupabaseRepository::customers()->all();
-            $projects = SupabaseRepository::projects()->all();
-            return Inertia::render('Quotes/Create', [
-                'customers' => $customers,
-                'projects' => $projects,
-                'customer_id' => $request->customer_id,
-                'project_id' => $request->project_id,
-            ]);
-        }
-
         $customers = Customer::all();
         $projects = Project::all();
         return Inertia::render('Quotes/Create', [
@@ -123,14 +90,10 @@ class QuoteController extends Controller
         $validated['tax'] = $tax;
         $validated['total'] = $subtotal + $tax;
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::quotes()->create($validated);
-        } else {
-            $quote = Quote::create($validated);
+        $quote = Quote::create($validated);
 
-            foreach ($items as $item) {
-                $quote->items()->create($item);
-            }
+        foreach ($items as $item) {
+            $quote->items()->create($item);
         }
 
         return redirect()->route('quotes.index')
@@ -142,13 +105,6 @@ class QuoteController extends Controller
      */
     public function show(Quote $quote)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $quote = SupabaseRepository::quotes()->find($quote->id);
-            return Inertia::render('Quotes/Show', [
-                'quote' => $quote,
-            ]);
-        }
-
         $quote->load(['customer', 'project', 'items']);
 
         return Inertia::render('Quotes/Show', [
@@ -161,17 +117,6 @@ class QuoteController extends Controller
      */
     public function edit(Quote $quote)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $quote = SupabaseRepository::quotes()->find($quote->id);
-            $customers = SupabaseRepository::customers()->all();
-            $projects = SupabaseRepository::projects()->all();
-            return Inertia::render('Quotes/Edit', [
-                'quote' => $quote,
-                'customers' => $customers,
-                'projects' => $projects,
-            ]);
-        }
-
         $customers = Customer::all();
         $projects = Project::all();
         $quote->load('items');
@@ -197,11 +142,7 @@ class QuoteController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::quotes()->update($quote->id, $validated);
-        } else {
-            $quote->update($validated);
-        }
+        $quote->update($validated);
 
         return redirect()->route('quotes.index')
             ->with('success', 'Angebot erfolgreich aktualisiert.');
@@ -212,11 +153,7 @@ class QuoteController extends Controller
      */
     public function destroy(Quote $quote)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::quotes()->delete($quote->id);
-        } else {
-            $quote->delete();
-        }
+        $quote->delete();
 
         return redirect()->route('quotes.index')
             ->with('success', 'Angebot erfolgreich gelöscht.');

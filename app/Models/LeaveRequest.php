@@ -18,12 +18,15 @@ class LeaveRequest extends Model
         'days',
         'status',
         'approved_by',
+        'approved_at',
+        'rejection_reason',
         'notes',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     /**

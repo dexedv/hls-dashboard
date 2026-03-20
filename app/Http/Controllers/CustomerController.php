@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,35 +13,13 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $customers = SupabaseRepository::customers()->all();
-
-            // Apply search filter
-            if ($request->search) {
-                $search = strtolower($request->search);
-                $customers = $customers->filter(function($c) use ($search) {
-                    return str_contains(strtolower($c['name'] ?? ''), $search) ||
-                           str_contains(strtolower($c['company'] ?? ''), $search) ||
-                           str_contains(strtolower($c['email'] ?? ''), $search);
-                });
-            }
-
-            $customers = SupabaseHelper::toPaginated($customers, 10);
-
-            return Inertia::render('Customers/Index', [
-                'customers' => $customers,
-                'filters' => $request->only(['search']),
-            ]);
-        }
-
-        // Use Eloquent (SQLite)
         $query = Customer::query();
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                    ->orWhere('company', 'like', "%{$request->search}%")
-                    ->orWhere('email', 'like', "%{$request->search}%");
+                $q->where('name', 'ilike', "%{$request->search}%")
+                    ->orWhere('company', 'ilike', "%{$request->search}%")
+                    ->orWhere('email', 'ilike', "%{$request->search}%");
             });
         }
 
@@ -81,22 +57,7 @@ class CustomerController extends Controller
 
         $validated['created_by'] = auth()->id();
 
-        if (SupabaseHelper::useSupabase()) {
-            // Only send fields that exist in Supabase
-            $data = [
-                'name' => $validated['name'],
-                'company' => $validated['company'] ?? null,
-                'email' => $validated['email'] ?? null,
-                'phone' => $validated['phone'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'notes' => $validated['notes'] ?? null,
-                'created_by' => $validated['created_by'],
-                'created_at' => now()->toISOString(),
-            ];
-            SupabaseRepository::customers()->create($data);
-        } else {
-            Customer::create($validated);
-        }
+        Customer::create($validated);
 
         return redirect()->route('customers.index')
             ->with('success', 'Kunde erfolgreich erstellt.');
@@ -107,13 +68,6 @@ class CustomerController extends Controller
      */
     public function show(Customer $customer)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $customer = SupabaseRepository::customers()->find($customer->id);
-            return Inertia::render('Customers/Show', [
-                'customer' => $customer,
-            ]);
-        }
-
         $customer->load(['projects', 'leads', 'creator']);
 
         return Inertia::render('Customers/Show', [
@@ -126,10 +80,6 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $customer = SupabaseRepository::customers()->find($customer->id);
-        }
-
         return Inertia::render('Customers/Edit', [
             'customer' => $customer,
         ]);
@@ -149,21 +99,7 @@ class CustomerController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            // Only send fields that exist in Supabase
-            $data = [
-                'name' => $validated['name'],
-                'company' => $validated['company'] ?? null,
-                'email' => $validated['email'] ?? null,
-                'phone' => $validated['phone'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'notes' => $validated['notes'] ?? null,
-                'updated_at' => now()->toISOString(),
-            ];
-            SupabaseRepository::customers()->update($customer->id, $data);
-        } else {
-            $customer->update($validated);
-        }
+        $customer->update($validated);
 
         return redirect()->route('customers.index')
             ->with('success', 'Kunde erfolgreich aktualisiert.');
@@ -174,11 +110,7 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::customers()->delete($customer->id);
-        } else {
-            $customer->delete();
-        }
+        $customer->delete();
 
         return redirect()->route('customers.index')
             ->with('success', 'Kunde erfolgreich gelöscht.');

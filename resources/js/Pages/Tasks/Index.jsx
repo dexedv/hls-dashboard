@@ -6,7 +6,7 @@ import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import StatusBadge from '@/Components/StatusBadge';
 
-export default function TasksIndex({ tasks, filters, projects, statuses = [], priorities = [] }) {
+export default function TasksIndex({ tasks, filters, projects, users, statuses = [], priorities = [] }) {
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
@@ -242,6 +242,7 @@ export default function TasksIndex({ tasks, filters, projects, statuses = [], pr
                                             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         >
                                             <option value="">Nicht zugewiesen</option>
+                                            {(users || []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                         </select>
                                     </div>
                                 </div>

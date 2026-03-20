@@ -1,79 +1,60 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
+import Pagination from '@/Components/Pagination';
 
-// Action type styling
 const getActionStyle = (action) => {
-    const styles = {
-        'user.login': 'bg-green-100 text-green-800',
-        'user.logout': 'bg-gray-100 text-gray-800',
-        'user.create': 'bg-blue-100 text-blue-800',
-        'user.update': 'bg-blue-100 text-blue-800',
-        'customer.create': 'bg-purple-100 text-purple-800',
-        'customer.update': 'bg-purple-100 text-purple-800',
-        'customer.delete': 'bg-red-100 text-red-800',
-        'project.create': 'bg-indigo-100 text-indigo-800',
-        'project.update': 'bg-indigo-100 text-indigo-800',
-        'project.delete': 'bg-red-100 text-red-800',
-        'invoice.create': 'bg-yellow-100 text-yellow-800',
-        'settings.update': 'bg-orange-100 text-orange-800',
-    };
-    return styles[action] || 'bg-gray-100 text-gray-800';
+    if (!action) return 'bg-gray-100 text-gray-800';
+    if (action.includes('.created')) return 'bg-green-100 text-green-800';
+    if (action.includes('.updated')) return 'bg-blue-100 text-blue-800';
+    if (action.includes('.deleted')) return 'bg-red-100 text-red-800';
+    if (action.includes('login')) return 'bg-green-100 text-green-800';
+    if (action.includes('logout')) return 'bg-gray-100 text-gray-800';
+    return 'bg-gray-100 text-gray-800';
 };
 
-// Get readable action name
 const getActionLabel = (action) => {
-    const labels = {
-        'user.login': 'Login',
-        'user.logout': 'Logout',
-        'user.create': 'Benutzer erstellt',
-        'user.update': 'Benutzer aktualisiert',
-        'customer.create': 'Kunde erstellt',
-        'customer.update': 'Kunde aktualisiert',
-        'customer.delete': 'Kunde gelöscht',
-        'project.create': 'Projekt erstellt',
-        'project.update': 'Projekt aktualisiert',
-        'project.delete': 'Projekt gelöscht',
-        'invoice.create': 'Rechnung erstellt',
-        'invoice.update': 'Rechnung aktualisiert',
-        'settings.update': 'Einstellungen geändert',
+    if (!action) return 'Unbekannt';
+    const parts = action.split('.');
+    const model = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : '';
+    const event = parts[1] || '';
+    const eventLabels = {
+        created: 'erstellt',
+        updated: 'aktualisiert',
+        deleted: 'gelöscht',
+        login: 'Login',
+        logout: 'Logout',
     };
-    return labels[action] || action;
+    return `${model} ${eventLabels[event] || event}`;
 };
 
-// Get role badge style
 const getRoleStyle = (role) => {
     const styles = {
-        'owner': 'bg-purple-100 text-purple-800',
-        'admin': 'bg-red-100 text-red-800',
-        'manager': 'bg-blue-100 text-blue-800',
-        'employee': 'bg-green-100 text-green-800',
-        'system': 'bg-gray-100 text-gray-800',
+        owner: 'bg-purple-100 text-purple-800',
+        admin: 'bg-red-100 text-red-800',
+        manager: 'bg-blue-100 text-blue-800',
+        employee: 'bg-green-100 text-green-800',
+        system: 'bg-gray-100 text-gray-800',
     };
     return styles[role] || 'bg-gray-100 text-gray-800';
 };
 
-export default function AuditLogsIndex({ logs }) {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [actionFilter, setActionFilter] = useState('');
+export default function AuditLogsIndex({ logs, filters }) {
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     const [expandedLog, setExpandedLog] = useState(null);
 
-    // Filter logs based on search and action
-    const filteredLogs = logs?.filter(log => {
-        const matchesSearch = !searchQuery ||
-            log.action?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            log.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            log.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            log.user_email?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesAction = !actionFilter || log.action === actionFilter;
-        return matchesSearch && matchesAction;
-    }) || [];
+    const logsData = logs?.data || [];
 
-    // Get unique actions for filter
-    const uniqueActions = [...new Set(logs?.map(log => log.action) || [])];
+    const handleSearch = (value) => {
+        setSearchQuery(value);
+        router.get(route('audit_logs.index'), { search: value || undefined, action: filters?.action || undefined }, {
+            preserveState: true,
+            replace: true,
+        });
+    };
 
     return (
         <DashboardLayout title="Audit Logs">
@@ -86,20 +67,10 @@ export default function AuditLogsIndex({ logs }) {
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-4 sm:mt-0">
                     <SearchInput
                         value={searchQuery}
-                        onChange={setSearchQuery}
+                        onChange={handleSearch}
                         placeholder="Suchen..."
                         className="w-full sm:w-48"
                     />
-                    <select
-                        value={actionFilter}
-                        onChange={(e) => setActionFilter(e.target.value)}
-                        className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-gray-50 hover:bg-white"
-                    >
-                        <option value="">Alle Aktionen</option>
-                        {uniqueActions.map(action => (
-                            <option key={action} value={action}>{getActionLabel(action)}</option>
-                        ))}
-                    </select>
                 </div>
             </PageHeader>
 
@@ -107,39 +78,37 @@ export default function AuditLogsIndex({ logs }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                     <p className="text-sm text-gray-500">Gesamt Logs</p>
-                    <p className="text-2xl font-bold text-gray-900">{logs?.length || 0}</p>
+                    <p className="text-2xl font-bold text-gray-900">{logs?.total || 0}</p>
                 </div>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                     <p className="text-sm text-gray-500">Heute</p>
                     <p className="text-2xl font-bold text-gray-900">
-                        {logs?.filter(l => new Date(l.created_at).toDateString() === new Date().toDateString()).length || 0}
+                        {logsData.filter(l => new Date(l.created_at).toDateString() === new Date().toDateString()).length || 0}
                     </p>
                 </div>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <p className="text-sm text-gray-500">Benutzeraktionen</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                        {logs?.filter(l => l.user_name !== 'System').length || 0}
-                    </p>
+                    <p className="text-sm text-gray-500">Aktuelle Seite</p>
+                    <p className="text-2xl font-bold text-gray-900">{logsData.length}</p>
                 </div>
             </div>
 
             {/* Logs Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                {filteredLogs.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-100">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeit</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Beschreibung</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Benutzer</th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Details</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredLogs.map((log) => (
-                                    <>
+                {logsData.length > 0 ? (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeit</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Beschreibung</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Benutzer</th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {logsData.map((log) => (
                                         <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <div>{new Date(log.created_at).toLocaleDateString('de-DE')}</div>
@@ -154,11 +123,6 @@ export default function AuditLogsIndex({ logs }) {
                                                 <div className="truncate" title={log.description}>
                                                     {log.description}
                                                 </div>
-                                                {log.entity_info && (
-                                                    <div className="text-xs text-gray-500 mt-1">
-                                                        {log.entity_info.type}: {log.entity_info.name}
-                                                    </div>
-                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center">
@@ -183,55 +147,22 @@ export default function AuditLogsIndex({ logs }) {
                                                 </button>
                                             </td>
                                         </tr>
-                                        {expandedLog === log.id && (
-                                            <tr key={`${log.id}-details`} className="bg-gray-50">
-                                                <td colSpan={5} className="px-6 py-4">
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                                        <div>
-                                                            <span className="text-gray-500">IP-Adresse:</span>
-                                                            <div className="font-mono text-gray-900">{log.ip_address || '-'}</div>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-gray-500">User-Agent:</span>
-                                                            <div className="text-gray-900 truncate max-w-xs" title={log.user_agent}>{log.user_agent || '-'}</div>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-gray-500">Entity ID:</span>
-                                                            <div className="text-gray-900">{log.entity_id || '-'}</div>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-gray-500">Entity Type:</span>
-                                                            <div className="text-gray-900">{log.entity_type || '-'}</div>
-                                                        </div>
-                                                        {log.old_values && (
-                                                            <div className="col-span-2">
-                                                                <span className="text-gray-500">Alte Werte:</span>
-                                                                <pre className="text-xs bg-white p-2 rounded border mt-1 overflow-x-auto">
-                                                                    {JSON.stringify(log.old_values, null, 2)}
-                                                                </pre>
-                                                            </div>
-                                                        )}
-                                                        {log.new_values && (
-                                                            <div className="col-span-2">
-                                                                <span className="text-gray-500">Neue Werte:</span>
-                                                                <pre className="text-xs bg-white p-2 rounded border mt-1 overflow-x-auto">
-                                                                    {JSON.stringify(log.new_values, null, 2)}
-                                                                </pre>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <Pagination
+                            links={logs?.links}
+                            from={logs?.from}
+                            to={logs?.to}
+                            total={logs?.total}
+                            entityName="Logs"
+                        />
+                    </>
                 ) : (
                     <EmptyState
                         title="Keine Audit-Logs vorhanden"
-                        description={searchQuery || actionFilter ? "Keine Logs entsprechen Ihrer Suche." : "Noch keine Systemaktivitäten wurden protokolliert."}
+                        description={filters?.search ? "Keine Logs entsprechen Ihrer Suche." : "Noch keine Systemaktivitäten wurden protokolliert."}
                         action={false}
                     />
                 )}

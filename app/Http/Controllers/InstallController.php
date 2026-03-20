@@ -61,7 +61,11 @@ class InstallController extends Controller
         ]);
 
         $data = [
-            'DB_CONNECTION' => $request->input('db_type') === 'supabase' ? 'sqlite' : $request->input('db_type'),
+            'DB_CONNECTION' => match ($request->input('db_type')) {
+                'supabase' => 'sqlite',
+                'postgresql' => 'pgsql',
+                default => $request->input('db_type'),
+            },
             'APP_KEY' => $this->envManager->generateKey(),
             'APP_URL' => $request->input('app_url', 'http://localhost'),
             'APP_DEBUG' => 'true',
@@ -167,6 +171,7 @@ class InstallController extends Controller
             'email' => $request->input('email'),
             'password' => Hash::make($request->input('password')),
             'role' => 'owner',
+            'is_approved' => true,
         ]);
 
         // Create default label

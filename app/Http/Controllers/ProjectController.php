@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Customer;
-use App\Repositories\SupabaseRepository;
-use App\Helpers\SupabaseHelper;
 use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,37 +15,11 @@ class ProjectController extends Controller
      */
     public function index(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $projects = SupabaseRepository::projects()->all();
-            $customers = SupabaseRepository::customers()->all();
-
-            if ($request->search) {
-                $search = strtolower($request->search);
-                $projects = $projects->filter(function($p) use ($search) {
-                    return str_contains(strtolower($p['name'] ?? ''), $search);
-                });
-            }
-
-            if ($request->status) {
-                $projects = $projects->where('status', $request->status);
-            }
-
-            $projects = SupabaseHelper::toPaginated($projects, 10);
-
-            return Inertia::render('Projects/Index', [
-                'projects' => $projects,
-                'customers' => $customers,
-                'filters' => $request->only(['search', 'status']),
-                'statuses' => StatusHelper::projectStatuses(),
-                'priorities' => StatusHelper::priorities(),
-            ]);
-        }
-
         $query = Project::query();
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%");
+                $q->where('name', 'ilike', "%{$request->search}%");
             });
         }
 
@@ -75,14 +47,6 @@ class ProjectController extends Controller
      */
     public function create(Request $request)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $customers = SupabaseRepository::customers()->all();
-            return Inertia::render('Projects/Create', [
-                'customers' => $customers,
-                'customer_id' => $request->customer_id,
-            ]);
-        }
-
         $customers = Customer::all();
         return Inertia::render('Projects/Create', [
             'customers' => $customers,
@@ -110,11 +74,7 @@ class ProjectController extends Controller
         $validated['status'] = $validated['status'] ?? 'planning';
         $validated['priority'] = $validated['priority'] ?? 'medium';
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::projects()->create($validated);
-        } else {
-            Project::create($validated);
-        }
+        Project::create($validated);
 
         return redirect()->route('projects.index')
             ->with('success', 'Projekt erfolgreich erstellt.');
@@ -125,18 +85,6 @@ class ProjectController extends Controller
      */
     public function show($id)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $project = SupabaseRepository::projects()->find($id);
-            if (!$project) {
-                abort(404);
-            }
-            return Inertia::render('Projects/Show', [
-                'project' => $project,
-                'statuses' => StatusHelper::projectStatuses(),
-                'priorities' => StatusHelper::priorities(),
-            ]);
-        }
-
         $project = Project::with(['customer', 'tasks', 'timeEntries', 'creator'])->findOrFail($id);
         return Inertia::render('Projects/Show', [
             'project' => $project,
@@ -150,18 +98,6 @@ class ProjectController extends Controller
      */
     public function edit($id)
     {
-        if (SupabaseHelper::useSupabase()) {
-            $project = SupabaseRepository::projects()->find($id);
-            if (!$project) {
-                abort(404);
-            }
-            $customers = SupabaseRepository::customers()->all();
-            return Inertia::render('Projects/Edit', [
-                'project' => $project,
-                'customers' => $customers,
-            ]);
-        }
-
         $project = Project::findOrFail($id);
         $customers = Customer::all();
         return Inertia::render('Projects/Edit', [
@@ -186,12 +122,8 @@ class ProjectController extends Controller
             'customer_id' => 'nullable',
         ]);
 
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::projects()->update($id, $validated);
-        } else {
-            $project = Project::findOrFail($id);
-            $project->update($validated);
-        }
+        $project = Project::findOrFail($id);
+        $project->update($validated);
 
         return redirect()->route('projects.index')
             ->with('success', 'Projekt erfolgreich aktualisiert.');
@@ -202,12 +134,8 @@ class ProjectController extends Controller
      */
     public function destroy($id)
     {
-        if (SupabaseHelper::useSupabase()) {
-            SupabaseRepository::projects()->delete($id);
-        } else {
-            $project = Project::findOrFail($id);
-            $project->delete();
-        }
+        $project = Project::findOrFail($id);
+        $project->delete();
 
         return redirect()->route('projects.index')
             ->with('success', 'Projekt erfolgreich gelöscht.');
