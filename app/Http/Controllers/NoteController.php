@@ -33,8 +33,8 @@ class NoteController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $projects = Project::all();
-        $customers = Customer::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
 
         return Inertia::render('Notes/Index', [
             'notes' => $notes,
@@ -50,8 +50,8 @@ class NoteController extends Controller
      */
     public function create(Request $request)
     {
-        $projects = Project::all();
-        $customers = Customer::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
         return Inertia::render('Notes/Create', [
             'projects' => $projects,
             'customers' => $customers,
@@ -98,8 +98,8 @@ class NoteController extends Controller
      */
     public function edit(Note $note)
     {
-        $projects = Project::all();
-        $customers = Customer::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
 
         return Inertia::render('Notes/Edit', [
             'note' => $note,

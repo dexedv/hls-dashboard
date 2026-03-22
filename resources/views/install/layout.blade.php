@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Installation - HLS Dashboard</title>
+    <title>Installation - {{ config('app.name', 'Dashboard') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
                         <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
-                        <span class="text-xl font-bold text-gray-900">HLS Dashboard</span>
+                        <span class="text-xl font-bold text-gray-900">{{ config('app.name', 'Dashboard') }}</span>
                     </div>
                 </div>
             </div>
@@ -32,31 +32,26 @@
         <div class="bg-white border-b border-gray-200">
             <div class="max-w-4xl mx-auto px-4 py-4">
                 <nav aria-label="Progress">
-                    <ol role="list" class="flex items-center justify-center space-x-8">
-                        <li class="{{ $step >= 1 ? 'text-blue-600' : 'text-gray-400' }}">
+                    <ol role="list" class="flex items-center justify-center space-x-4 lg:space-x-6">
+                        @php
+                            $steps = [
+                                1 => 'Willkommen',
+                                2 => 'EULA',
+                                3 => 'Lizenz',
+                                4 => 'Datenbank',
+                                5 => 'Admin',
+                                6 => 'Firma',
+                                7 => 'Fertig',
+                            ];
+                        @endphp
+                        @foreach($steps as $num => $label)
+                        <li class="{{ $step >= $num ? 'text-blue-600' : 'text-gray-400' }}">
                             <div class="flex items-center">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-full {{ $step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200' }} text-sm font-medium">1</span>
-                                <span class="ml-3 text-sm font-medium">Willkommen</span>
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full {{ $step >= $num ? 'bg-blue-600 text-white' : 'bg-gray-200' }} text-sm font-medium">{{ $num }}</span>
+                                <span class="ml-2 text-sm font-medium hidden sm:inline">{{ $label }}</span>
                             </div>
                         </li>
-                        <li class="{{ $step >= 2 ? 'text-blue-600' : 'text-gray-400' }}">
-                            <div class="flex items-center">
-                                <div class="flex h-8 w-8 items-center justify-center rounded-full {{ $step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200' }} text-sm font-medium">2</span>
-                                <span class="ml-3 text-sm font-medium">Datenbank</span>
-                            </div>
-                        </li>
-                        <li class="{{ $step >= 3 ? 'text-blue-600' : 'text-gray-400' }}">
-                            <div class="flex items-center">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-full {{ $step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200' }} text-sm font-medium">3</span>
-                                <span class="ml-3 text-sm font-medium">Admin</span>
-                            </div>
-                        </li>
-                        <li class="{{ $step >= 4 ? 'text-blue-600' : 'text-gray-400' }}">
-                            <div class="flex items-center">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-full {{ $step >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-200' }} text-sm font-medium">4</span>
-                                <span class="ml-3 text-sm font-medium">Fertig</span>
-                            </div>
-                        </li>
+                        @endforeach
                     </ol>
                 </nav>
             </div>
@@ -72,7 +67,7 @@
         <!-- Footer -->
         <footer class="bg-white border-t border-gray-200 py-4">
             <div class="max-w-4xl mx-auto px-4 text-center text-sm text-gray-500">
-                &copy; {{ date('Y') }} HLS Dashboard. Alle Rechte vorbehalten.
+                &copy; {{ date('Y') }} {{ config('app.name', 'Dashboard') }}. Alle Rechte vorbehalten.
             </div>
         </footer>
     </div>

@@ -1,12 +1,31 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import StatusBadge from '@/Components/StatusBadge';
+import Pagination from '@/Components/Pagination';
 
 export default function TasksIndex({ tasks, filters, projects, users, statuses = [], priorities = [] }) {
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkStatus, setBulkStatus] = useState('');
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+    const toggleAll = () => {
+        if (selectedIds.length === tasks.data.length) setSelectedIds([]);
+        else setSelectedIds(tasks.data.map(t => t.id));
+    };
+    const handleBulkDelete = () => {
+        if (!confirm(`${selectedIds.length} Aufgaben loeschen?`)) return;
+        router.post(route('tasks.bulkDelete'), { ids: selectedIds }, { onSuccess: () => setSelectedIds([]) });
+    };
+    const handleBulkStatus = () => {
+        if (!bulkStatus) return;
+        router.post(route('tasks.bulkUpdateStatus'), { ids: selectedIds, status: bulkStatus }, { onSuccess: () => { setSelectedIds([]); setBulkStatus(''); } });
+    };
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
@@ -24,7 +43,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
         e.preventDefault();
         const url = new URL(route('tasks.index'));
         if (search) url.searchParams.set('search', search);
-        window.location.href = url.toString();
+        router.visit(url.toString());
     };
 
     const handleSubmit = (e) => {
@@ -78,91 +97,129 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                 </div>
             </PageHeader>
 
+            {/* Bulk Action Bar */}
+            {selectedIds.length > 0 && (
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+                    <span className="text-sm text-primary-800 font-medium">{selectedIds.length} ausgewaehlt</span>
+                    <div className="flex gap-2 items-center">
+                        <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-sm">
+                            <option value="">Status aendern...</option>
+                            <option value="todo">Offen</option>
+                            <option value="in_progress">In Bearbeitung</option>
+                            <option value="review">Review</option>
+                            <option value="done">Erledigt</option>
+                        </select>
+                        {bulkStatus && <Button onClick={handleBulkStatus}>Anwenden</Button>}
+                        <Button variant="secondary" onClick={() => setSelectedIds([])}>Aufheben</Button>
+                        <button onClick={handleBulkDelete} className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">Loeschen</button>
+                    </div>
+                </div>
+            )}
+
             {/* Tasks List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 overflow-hidden">
                 {tasks.data.length === 0 ? (
-                    <EmptyState
-                        title="Noch keine Aufgaben vorhanden"
-                        description="Erstellen Sie Ihre erste Aufgabe, um loszulegen."
-                        actionLabel="Erste Aufgabe anlegen"
-                        onAction={() => setShowModal(true)}
-                    />
+                    <div className="px-6 py-12">
+                        <EmptyState
+                            title="Noch keine Aufgaben vorhanden"
+                            description="Erstellen Sie Ihre erste Aufgabe, um loszulegen."
+                            actionLabel="Erste Aufgabe anlegen"
+                            onAction={() => setShowModal(true)}
+                        />
+                    </div>
                 ) : (
-                    <div className="divide-y divide-gray-100">
-                        {tasks.data.map((task) => (
-                            <Link
-                                key={task.id}
-                                href={route('tasks.show', task.id)}
-                                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-150 rounded-xl mx-1 my-1"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className={`h-3 w-3 rounded-full ${
-                                        task.status === 'done' ? 'bg-green-500' :
-                                        task.status === 'in_progress' ? 'bg-blue-500' :
-                                        task.status === 'review' ? 'bg-yellow-500' :
-                                        'bg-gray-300'
-                                    }`}></div>
-                                    <div>
-                                        <h3 className="font-medium text-gray-900">{task.title}</h3>
-                                        {task.project && (
-                                            <p className="text-sm text-gray-500">{task.project.name}</p>
+                    <>
+                        {/* Desktop List */}
+                        <div className="hidden md:block divide-y divide-gray-100 dark:divide-gray-700">
+                            {tasks.data.map((task) => (
+                                <div
+                                    key={task.id}
+                                    className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 rounded-xl mx-1 my-1"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <input type="checkbox" checked={selectedIds.includes(task.id)} onChange={() => toggleSelect(task.id)} className="rounded border-gray-300" onClick={e => e.stopPropagation()} />
+                                        <Link href={route('tasks.show', task.id)} className="flex items-center gap-4 flex-1">
+                                            <div className={`h-3 w-3 rounded-full ${
+                                                task.status === 'done' ? 'bg-green-500' :
+                                                task.status === 'in_progress' ? 'bg-blue-500' :
+                                                task.status === 'review' ? 'bg-yellow-500' :
+                                                'bg-gray-300'
+                                            }`}></div>
+                                            <div>
+                                                <h3 className="font-medium text-gray-900 dark:text-gray-100">{task.title}</h3>
+                                                {task.project && (
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{task.project.name}</p>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-xs ${priorityIcons[task.priority]}`}>
+                                            {task.priority === 'urgent' && '●●●'}
+                                            {task.priority === 'high' && '●●○'}
+                                            {task.priority === 'medium' && '●○○'}
+                                            {task.priority === 'low' && '○○○'}
+                                        </span>
+                                        <StatusBadge status={task.status} statuses={statuses} />
+                                        {task.due_date && (
+                                            <span className="text-sm text-gray-500">
+                                                {new Date(task.due_date).toLocaleDateString('de-DE')}
+                                            </span>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <span className={`text-xs ${priorityIcons[task.priority]}`}>
-                                        {task.priority === 'urgent' && '●●●'}
-                                        {task.priority === 'high' && '●●○'}
-                                        {task.priority === 'medium' && '●○○'}
-                                        {task.priority === 'low' && '○○○'}
-                                    </span>
-                                    <StatusBadge status={task.status} statuses={statuses} />
-                                    {task.due_date && (
-                                        <span className="text-sm text-gray-500">
-                                            {new Date(task.due_date).toLocaleDateString('de-DE')}
+                            ))}
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                            {tasks.data.map((task) => (
+                                <div key={task.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-start gap-3">
+                                            <input type="checkbox" checked={selectedIds.includes(task.id)} onChange={() => toggleSelect(task.id)} className="rounded border-gray-300 mt-1" onClick={e => e.stopPropagation()} />
+                                            <div>
+                                                <Link href={route('tasks.show', task.id)} className="font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600">
+                                                    {task.title}
+                                                </Link>
+                                                {task.project && <p className="text-sm text-gray-500 dark:text-gray-400">{task.project.name}</p>}
+                                            </div>
+                                        </div>
+                                        <StatusBadge status={task.status} statuses={statuses} />
+                                    </div>
+                                    <div className="mt-2 ml-8 flex items-center gap-3">
+                                        <span className={`text-xs ${priorityIcons[task.priority]}`}>
+                                            {task.priority === 'urgent' && '●●●'}
+                                            {task.priority === 'high' && '●●○'}
+                                            {task.priority === 'medium' && '●○○'}
+                                            {task.priority === 'low' && '○○○'}
                                         </span>
-                                    )}
+                                        <span className="text-sm text-gray-500">{priorityLabels[task.priority]}</span>
+                                        {task.assignee && (
+                                            <span className="text-sm text-gray-500">{task.assignee.name}</span>
+                                        )}
+                                        {task.due_date && (
+                                            <span className="text-sm text-gray-500">
+                                                {new Date(task.due_date).toLocaleDateString('de-DE')}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            </Link>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    </>
                 )}
 
                 {/* Pagination */}
-                {tasks.last_page > 1 && (
-                    <div className="px-6 py-4 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-500">
-                                Zeige {tasks.from} - {tasks.to} von {tasks.total} Aufgaben
-                            </div>
-                            <div className="flex gap-2">
-                                {tasks.links.map((link, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => link.url && (window.location.href = link.url)}
-                                        disabled={!link.url}
-                                        className={`px-3 py-1 rounded-xl text-sm transition-colors ${
-                                            link.active
-                                                ? 'bg-primary-600 text-white'
-                                                : link.url
-                                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                : 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <Pagination links={tasks.links} from={tasks.from} to={tasks.to} total={tasks.total} entityName="Aufgaben" />
             </div>
 
             {/* Create Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-gray-100">
-                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-gray-900">Neue Aufgabe</h2>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Neue Aufgabe</h2>
                             <IconButton onClick={() => setShowModal(false)}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -172,7 +229,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                         <form onSubmit={handleSubmit} className="p-6">
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titel *</label>
                                     <input
                                         type="text"
                                         value={data.title}
@@ -182,7 +239,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Beschreibung</label>
                                     <textarea
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
@@ -192,7 +249,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                                         <select
                                             value={data.status}
                                             onChange={(e) => setData('status', e.target.value)}
@@ -205,7 +262,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Priorität</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priorität</label>
                                         <select
                                             value={data.priority}
                                             onChange={(e) => setData('priority', e.target.value)}
@@ -220,7 +277,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Projekt</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Projekt</label>
                                         <select
                                             value={data.project_id}
                                             onChange={(e) => setData('project_id', e.target.value)}
@@ -235,7 +292,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Zugewiesen an</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zugewiesen an</label>
                                         <select
                                             value={data.assigned_to}
                                             onChange={(e) => setData('assigned_to', e.target.value)}
@@ -248,7 +305,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fälligkeitsdatum</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fälligkeitsdatum</label>
                                         <input
                                             type="date"
                                             value={data.due_date}

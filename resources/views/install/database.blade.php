@@ -1,4 +1,4 @@
-@extends('install.layout', ['step' => 2])
+@extends('install.layout', ['step' => 4])
 
 @section('content')
     <form action="{{ route('install.database.save') }}" method="POST" class="space-y-6">

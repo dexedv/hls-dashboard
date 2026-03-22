@@ -29,7 +29,7 @@ class TimeEntryController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
 
         // Calculate totals
         $totalDuration = TimeEntry::sum('duration');
@@ -47,7 +47,7 @@ class TimeEntryController extends Controller
      */
     public function create(Request $request)
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $tasks = Task::all();
         return Inertia::render('TimeTracking/Create', [
             'projects' => $projects,
@@ -64,13 +64,23 @@ class TimeEntryController extends Controller
     {
         $validated = $request->validate([
             'description' => 'nullable|string',
-            'start_time' => 'required|date',
-            'end_time' => 'nullable|date|after:start_time',
+            'start_time' => 'nullable',
+            'end_time' => 'nullable',
+            'date' => 'nullable|date',
             'duration' => 'nullable|integer|min:0',
             'project_id' => 'nullable',
             'task_id' => 'nullable',
             'billable' => 'boolean',
         ]);
+
+        // Combine date + time fields if sent separately
+        if (!empty($validated['date']) && !empty($validated['start_time']) && strlen($validated['start_time']) <= 5) {
+            $validated['start_time'] = $validated['date'] . ' ' . $validated['start_time'] . ':00';
+        }
+        if (!empty($validated['date']) && !empty($validated['end_time']) && strlen($validated['end_time']) <= 5) {
+            $validated['end_time'] = $validated['date'] . ' ' . $validated['end_time'] . ':00';
+        }
+        unset($validated['date']);
 
         $validated['user_id'] = auth()->id();
 
@@ -92,7 +102,7 @@ class TimeEntryController extends Controller
      */
     public function edit(TimeEntry $timeEntry)
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $tasks = Task::all();
 
         return Inertia::render('TimeTracking/Edit', [

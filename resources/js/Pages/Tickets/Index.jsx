@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import StatusBadge from '@/Components/StatusBadge';
+import Pagination from '@/Components/Pagination';
 
 export default function TicketsIndex({ tickets, customers, projects, users, filters, statuses = [], priorities = [] }) {
     const { data, setData, post, processing } = useForm({
@@ -23,7 +24,7 @@ export default function TicketsIndex({ tickets, customers, projects, users, filt
         e.preventDefault();
         const url = new URL(route('tickets.index'));
         if (search) url.searchParams.set('search', search);
-        window.location.href = url.toString();
+        router.visit(url.toString());
     };
 
     const handleSubmit = (e) => {
@@ -137,18 +138,7 @@ export default function TicketsIndex({ tickets, customers, projects, users, filt
             </div>
 
             {/* Pagination */}
-            {tickets.links && tickets.links.length > 3 && (
-                <div className="mt-4 flex justify-center gap-2">
-                    {tickets.links.map((link, index) => (
-                        <Link
-                            key={index}
-                            href={link.url || '#'}
-                            className={`px-3 py-1 rounded-xl text-sm transition-colors ${link.active ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 hover:bg-gray-50'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ))}
-                </div>
-            )}
+            <Pagination links={tickets.links} from={tickets.from} to={tickets.to} total={tickets.total} entityName="Tickets" />
 
             {/* Create Modal */}
             {showModal && (

@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\Customer;
 use App\Models\Project;
+use App\Models\Setting;
 use App\Helpers\StatusHelper;
+use App\Services\PdfService;
+use App\Mail\InvoiceMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class InvoiceController extends Controller
@@ -47,8 +51,8 @@ class InvoiceController extends Controller
      */
     public function create(Request $request)
     {
-        $customers = Customer::all();
-        $projects = Project::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Invoices/Create', [
             'customers' => $customers,
             'projects' => $projects,
@@ -63,7 +67,7 @@ class InvoiceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'number' => 'required|string',
+            'number' => 'nullable|string|unique:invoices,number',
             'customer_id' => 'required',
             'project_id' => 'nullable',
             'status' => 'nullable|in:draft,sent,paid,overdue,cancelled',
@@ -75,6 +79,19 @@ class InvoiceController extends Controller
             'items.*.quantity' => 'required|numeric|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
         ]);
+
+        // Auto-generate invoice number if not provided
+        if (empty($validated['number'])) {
+            $year = now()->format('Y');
+            $lastInvoice = Invoice::where('number', 'like', "RE-{$year}-%")
+                ->orderByRaw("CAST(SUBSTRING(number FROM 'RE-\\d{4}-(\\d+)') AS INTEGER) DESC NULLS LAST")
+                ->first();
+            $nextNum = 1;
+            if ($lastInvoice && preg_match('/RE-\d{4}-(\d+)/', $lastInvoice->number, $matches)) {
+                $nextNum = (int)$matches[1] + 1;
+            }
+            $validated['number'] = "RE-{$year}-" . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        }
 
         $validated['created_by'] = auth()->id();
         $validated['status'] = $validated['status'] ?? 'draft';
@@ -88,7 +105,8 @@ class InvoiceController extends Controller
         }
         unset($item);
 
-        $tax = $subtotal * 0.19; // 19% tax
+        $taxRate = Setting::get('tax_rate', 19);
+        $tax = $subtotal * ($taxRate / 100);
         $validated['subtotal'] = $subtotal;
         $validated['tax'] = $tax;
         $validated['total'] = $subtotal + $tax;
@@ -121,8 +139,8 @@ class InvoiceController extends Controller
      */
     public function edit(Invoice $invoice)
     {
-        $customers = Customer::all();
-        $projects = Project::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $invoice->load('items');
 
         return Inertia::render('Invoices/Edit', [
@@ -179,6 +197,48 @@ class InvoiceController extends Controller
 
         return redirect()->back()
             ->with('success', 'Rechnung als bezahlt markiert.');
+    }
+
+    /**
+     * Generate PDF for invoice.
+     */
+    public function pdf(Invoice $invoice)
+    {
+        $pdf = PdfService::generateInvoicePdf($invoice);
+        return $pdf->download('Rechnung_' . $invoice->number . '.pdf');
+    }
+
+    /**
+     * Send invoice via email.
+     */
+    public function sendEmail(Invoice $invoice)
+    {
+        $invoice->load('customer');
+
+        $email = $invoice->customer?->email;
+        if (!$email) {
+            return redirect()->back()->with('error', 'Kunde hat keine E-Mail-Adresse.');
+        }
+
+        Mail::to($email)->send(new InvoiceMail($invoice));
+
+        return redirect()->back()->with('success', 'Rechnung wurde per E-Mail gesendet.');
+    }
+
+    /**
+     * Bulk update status.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:invoices,id',
+            'status' => 'required|in:draft,sent,paid,overdue,cancelled',
+        ]);
+
+        Invoice::whereIn('id', $request->ids)->update(['status' => $request->status]);
+
+        return redirect()->back()->with('success', count($request->ids) . ' Rechnungen aktualisiert.');
     }
 
     /**

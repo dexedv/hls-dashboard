@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 export default function ChatButton() {
     const { auth } = usePage().props;
     const [isOpen, setIsOpen] = useState(false);
@@ -18,15 +23,12 @@ export default function ChatButton() {
             const response = await fetch('/chat', {
                 credentials: 'same-origin',
             });
-            if (!response.ok) {
-                console.error('Fetch error:', response.status, response.statusText);
-                return;
-            }
+            if (!response.ok) return;
             const data = await response.json();
             setConversations(data.conversationUsers || []);
             setUnreadCount(data.unreadCount || 0);
-        } catch (error) {
-            console.error('Error fetching conversations:', error);
+        } catch {
+            // Network error - silently ignore
         }
     };
 
@@ -35,14 +37,11 @@ export default function ChatButton() {
             const response = await fetch('/chat/unread', {
                 credentials: 'same-origin',
             });
-            if (!response.ok) {
-                console.error('Fetch error:', response.status, response.statusText);
-                return;
-            }
+            if (!response.ok) return;
             const data = await response.json();
             setUnreadCount(data.unreadCount || 0);
-        } catch (error) {
-            console.error('Error fetching unread count:', error);
+        } catch {
+            // Network error - silently ignore
         }
     };
 
@@ -51,14 +50,11 @@ export default function ChatButton() {
             const response = await fetch(`/chat/conversation/${userId}`, {
                 credentials: 'same-origin',
             });
-            if (!response.ok) {
-                console.error('Fetch error:', response.status, response.statusText);
-                return;
-            }
+            if (!response.ok) return;
             const data = await response.json();
             setMessages(data.messages || []);
-        } catch (error) {
-            console.error('Error fetching messages:', error);
+        } catch {
+            // Network error - silently ignore
         }
     };
 
@@ -67,14 +63,11 @@ export default function ChatButton() {
             const response = await fetch('/chat/users', {
                 credentials: 'same-origin',
             });
-            if (!response.ok) {
-                console.error('Fetch error:', response.status, response.statusText);
-                return;
-            }
+            if (!response.ok) return;
             const data = await response.json();
             setAllUsers(data.users || []);
-        } catch (error) {
-            console.error('Error fetching users:', error);
+        } catch {
+            // Network error - silently ignore
         }
     };
 
@@ -88,21 +81,19 @@ export default function ChatButton() {
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
                 body: JSON.stringify({
                     receiver_id: selectedUser.id,
                     message: newMessage,
                 }),
             });
-            if (!response.ok) {
-                console.error('Send error:', response.status, response.statusText);
-                return;
-            }
+            if (!response.ok) return;
             setNewMessage('');
             fetchMessages(selectedUser.id);
             fetchConversations();
-        } catch (error) {
-            console.error('Error sending message:', error);
+        } catch {
+            // Network error - silently ignore
         }
     };
 
@@ -122,6 +113,22 @@ export default function ChatButton() {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Auto-polling: refresh unread count every 10s, messages every 5s when conversation open
+    useEffect(() => {
+        const unreadInterval = setInterval(() => {
+            fetchUnreadCount();
+        }, 10000);
+        return () => clearInterval(unreadInterval);
+    }, []);
+
+    useEffect(() => {
+        if (!selectedUser || !isOpen) return;
+        const msgInterval = setInterval(() => {
+            fetchMessages(selectedUser.id);
+        }, 5000);
+        return () => clearInterval(msgInterval);
+    }, [selectedUser, isOpen]);
 
     const formatTime = (dateString) => {
         const date = new Date(dateString);
@@ -148,7 +155,7 @@ export default function ChatButton() {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-200">
+                <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
                     {/* Header */}
                     <div className="bg-primary-600 text-white p-4 flex items-center justify-between">
                         <h3 className="font-semibold text-lg">Mitarbeiter-Chat</h3>
@@ -167,7 +174,7 @@ export default function ChatButton() {
                         {/* Conversations List */}
                         {!selectedUser && (
                             <div className="w-full flex flex-col">
-                                <div className="p-3 border-b border-gray-100">
+                                <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                                     <button
                                         onClick={() => { setShowUserList(true); fetchAllUsers(); }}
                                         className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
@@ -184,19 +191,19 @@ export default function ChatButton() {
                                             <button
                                                 key={user.id}
                                                 onClick={() => setSelectedUser(user)}
-                                                className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"
+                                                className="w-full p-3 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 border-b border-gray-100 dark:border-gray-700"
                                             >
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold">
                                                     {user.name?.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="flex-1 text-left">
-                                                    <p className="font-medium text-gray-900">{user.name}</p>
-                                                    <p className="text-sm text-gray-500">{user.role}</p>
+                                                    <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.role}</p>
                                                 </div>
                                             </button>
                                         ))
                                     ) : (
-                                        <div className="p-8 text-center text-gray-500">
+                                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                                             <p>Keine Gespräche vorhanden</p>
                                             <p className="text-sm mt-1">Klicke auf "Neues Gespräch"</p>
                                         </div>
@@ -208,7 +215,7 @@ export default function ChatButton() {
                         {/* User Selection */}
                         {(showUserList || (selectedUser && !messages.length && conversations.length === 0)) && (
                             <div className="w-full flex flex-col">
-                                <div className="p-3 border-b border-gray-100">
+                                <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                                     <button
                                         onClick={() => { setSelectedUser(null); setShowUserList(false); }}
                                         className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-sm"
@@ -225,19 +232,19 @@ export default function ChatButton() {
                                             <button
                                                 key={user.id}
                                                 onClick={() => { setSelectedUser(user); setShowUserList(false); }}
-                                                className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"
+                                                className="w-full p-3 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 border-b border-gray-100 dark:border-gray-700"
                                             >
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold">
                                                     {user.name?.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="flex-1 text-left">
-                                                    <p className="font-medium text-gray-900">{user.name}</p>
-                                                    <p className="text-sm text-gray-500">{user.role}</p>
+                                                    <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.role}</p>
                                                 </div>
                                             </button>
                                         ))
                                     ) : (
-                                        <div className="p-8 text-center text-gray-500">
+                                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                                             <p>Keine Benutzer gefunden</p>
                                         </div>
                                     )}
@@ -248,10 +255,10 @@ export default function ChatButton() {
                         {/* Chat Conversation */}
                         {selectedUser && (
                             <div className="w-full flex flex-col">
-                                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                                <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                                     <button
                                         onClick={() => setSelectedUser(null)}
-                                        className="text-gray-500 hover:text-gray-700"
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -260,7 +267,7 @@ export default function ChatButton() {
                                     <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold text-sm">
                                         {selectedUser.name?.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="font-medium">{selectedUser.name}</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{selectedUser.name}</span>
                                 </div>
 
                                 {/* Messages */}
@@ -276,11 +283,11 @@ export default function ChatButton() {
                                                     className={`max-w-[80%] rounded-lg px-4 py-2 ${
                                                         isOwn
                                                             ? 'bg-primary-600 text-white'
-                                                            : 'bg-gray-100 text-gray-900'
+                                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                                                     }`}
                                                 >
                                                     <p>{msg.message}</p>
-                                                    <p className={`text-xs mt-1 ${isOwn ? 'text-primary-200' : 'text-gray-500'}`}>
+                                                    <p className={`text-xs mt-1 ${isOwn ? 'text-primary-200' : 'text-gray-500 dark:text-gray-400'}`}>
                                                         {formatTime(msg.created_at)}
                                                     </p>
                                                 </div>
@@ -291,14 +298,14 @@ export default function ChatButton() {
                                 </div>
 
                                 {/* Message Input */}
-                                <form onSubmit={sendMessage} className="p-3 border-t border-gray-100">
+                                <form onSubmit={sendMessage} className="p-3 border-t border-gray-100 dark:border-gray-700">
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             placeholder="Nachricht eingeben..."
-                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         />
                                         <button
                                             type="submit"

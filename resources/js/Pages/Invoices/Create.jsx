@@ -1,11 +1,11 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, usePage, useForm } from '@inertiajs/react';
+import { Head, Link, usePage, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function Create() {
     const { customers, projects } = usePage().props;
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, errors } = useForm({
         customer_id: '',
         project_id: '',
         issue_date: '',
@@ -15,6 +15,7 @@ export default function Create() {
     });
 
     const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0 }]);
+    const [submitting, setSubmitting] = useState(false);
 
     const addItem = () => {
         setItems([...items, { description: '', quantity: 1, unit_price: 0 }]);
@@ -36,12 +37,14 @@ export default function Create() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const formData = {
+        setSubmitting(true);
+        router.post(route('invoices.store'), {
             ...data,
             items: items,
             total: calculateTotal(),
-        };
-        post('/invoices', { data: formData });
+        }, {
+            onFinish: () => setSubmitting(false),
+        });
     };
 
     return (
@@ -56,17 +59,17 @@ export default function Create() {
                     </div>
                     <div className="flex gap-3">
                         <Link
-                            href="/invoices"
+                            href={route('invoices.index')}
                             className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                         >
                             Abbrechen
                         </Link>
                         <button
                             type="submit"
-                            disabled={processing}
+                            disabled={submitting}
                             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                         >
-                            {processing ? 'Speichern...' : 'Speichern'}
+                            {submitting ? 'Speichern...' : 'Speichern'}
                         </button>
                     </div>
                 </div>
@@ -142,7 +145,7 @@ export default function Create() {
                                 <select
                                     value={data.customer_id}
                                     onChange={(e) => setData('customer_id', e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                    className={`w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 ${errors.customer_id ? 'border-red-500' : 'border-gray-300'}`}
                                     required
                                 >
                                     <option value="">Kunde wählen</option>
@@ -152,6 +155,7 @@ export default function Create() {
                                         </option>
                                     ))}
                                 </select>
+                                {errors.customer_id && <p className="text-sm text-red-600 mt-1">{errors.customer_id}</p>}
                             </div>
 
                             <div>

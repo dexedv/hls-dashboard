@@ -16,10 +16,15 @@ createInertiaApp({
         ),
     setup({ el, App, props }) {
         const root = createRoot(el);
-
         root.render(<App {...props} />);
+
+        // Apply dynamic progress bar color from branding
+        const primaryColor = props.initialPage?.props?.branding?.primary_color;
+        if (primaryColor) {
+            document.documentElement.style.setProperty('--progress-bar-color', primaryColor);
+        }
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--progress-bar-color, #0284c7)',
     },
 });

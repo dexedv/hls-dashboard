@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { DashboardSkeleton } from '@/Components/Skeleton';
 
 // Icon Components (Heroicons)
 const Icons = {
@@ -57,7 +59,46 @@ const Icons = {
 };
 
 export default function Dashboard() {
-    const { stats, recentTasks, recentLeads } = usePage().props;
+    const { stats, recentTasks, recentLeads, activityFeed } = usePage().props;
+    const [isLoading, setIsLoading] = useState(!stats);
+
+    useEffect(() => {
+        if (stats) setIsLoading(false);
+    }, [stats]);
+
+    if (isLoading) {
+        return (
+            <DashboardLayout title="Dashboard">
+                <Head title="Dashboard" />
+                <DashboardSkeleton />
+            </DashboardLayout>
+        );
+    }
+
+    const formatRelativeTime = (dateString) => {
+        const now = new Date();
+        const date = new Date(dateString);
+        const diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return 'gerade eben';
+        if (diff < 3600) return `vor ${Math.floor(diff / 60)} Min`;
+        if (diff < 86400) return `vor ${Math.floor(diff / 3600)} Std`;
+        if (diff < 604800) return `vor ${Math.floor(diff / 86400)} Tagen`;
+        return date.toLocaleDateString('de-DE');
+    };
+
+    const getActionIcon = (action) => {
+        if (action === 'created') return { icon: '+', bg: 'bg-green-100', text: 'text-green-600' };
+        if (action === 'updated') return { icon: '~', bg: 'bg-blue-100', text: 'text-blue-600' };
+        if (action === 'deleted') return { icon: '×', bg: 'bg-red-100', text: 'text-red-600' };
+        return { icon: '•', bg: 'bg-gray-100', text: 'text-gray-600' };
+    };
+
+    const getActionLabel = (action) => {
+        if (action === 'created') return 'erstellt';
+        if (action === 'updated') return 'bearbeitet';
+        if (action === 'deleted') return 'geloescht';
+        return action;
+    };
 
     const statCards = [
         {
@@ -313,6 +354,37 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+            {/* Activity Feed */}
+            {activityFeed && activityFeed.length > 0 && (
+                <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                        <h2 className="text-lg font-semibold text-gray-900">Letzte Aktivitaeten</h2>
+                    </div>
+                    <div className="p-4">
+                        <ul className="space-y-3">
+                            {activityFeed.map((entry) => {
+                                const actionStyle = getActionIcon(entry.action);
+                                return (
+                                    <li key={entry.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div className={`flex-shrink-0 h-8 w-8 rounded-full ${actionStyle.bg} ${actionStyle.text} flex items-center justify-center font-bold text-sm`}>
+                                            {actionStyle.icon}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-gray-900">
+                                                <span className="font-medium">{entry.user?.name || 'System'}</span>
+                                                {' '}hat{' '}
+                                                <span className="font-medium">{entry.auditable_type?.split('\\').pop()}</span>
+                                                {' '}{getActionLabel(entry.action)}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-0.5">{formatRelativeTime(entry.created_at)}</p>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }

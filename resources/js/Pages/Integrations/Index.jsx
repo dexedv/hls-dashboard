@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, usePage, useForm } from '@inertiajs/react';
+import { Head, usePage, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader, { Button } from '@/Components/PageHeader';
 
@@ -46,7 +46,7 @@ export default function IntegrationsIndex() {
             const result = await response.json();
             setConnectionStatus(result);
             if (result.success) {
-                window.location.reload();
+                router.reload();
             }
         } catch (error) {
             setConnectionStatus({ success: false, message: error.message });
@@ -63,7 +63,7 @@ export default function IntegrationsIndex() {
             });
             const result = await response.json();
             alert(`Kunden synchronisiert: ${result.synced} erfolgreich, ${result.failed} fehlgeschlagen`);
-            if (result.success) window.location.reload();
+            if (result.success) router.reload();
         } catch (error) {
             alert('Fehler: ' + error.message);
         }
@@ -79,7 +79,7 @@ export default function IntegrationsIndex() {
             });
             const result = await response.json();
             alert(`Rechnungen synchronisiert: ${result.synced} erfolgreich, ${result.failed} fehlgeschlagen`);
-            if (result.success) window.location.reload();
+            if (result.success) router.reload();
         } catch (error) {
             alert('Fehler: ' + error.message);
         }
@@ -95,7 +95,7 @@ export default function IntegrationsIndex() {
             });
             const result = await response.json();
             alert(`Angebote synchronisiert: ${result.synced} erfolgreich, ${result.failed} fehlgeschlagen`);
-            if (result.success) window.location.reload();
+            if (result.success) router.reload();
         } catch (error) {
             alert('Fehler: ' + error.message);
         }
@@ -111,7 +111,7 @@ export default function IntegrationsIndex() {
             });
             const result = await response.json();
             alert(`Kunden importiert: ${result.imported}`);
-            if (result.success) window.location.reload();
+            if (result.success) router.reload();
         } catch (error) {
             alert('Fehler: ' + error.message);
         }
@@ -127,7 +127,7 @@ export default function IntegrationsIndex() {
             });
             const result = await response.json();
             alert(`Rechnungen importiert: ${result.imported}`);
-            if (result.success) window.location.reload();
+            if (result.success) router.reload();
         } catch (error) {
             alert('Fehler: ' + error.message);
         }

@@ -1,10 +1,26 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import EmptyState from '@/Components/EmptyState';
+import Pagination from '@/Components/Pagination';
 
 export default function InvoicesIndex({ invoices, customers, projects, filters, statuses = [] }) {
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkStatus, setBulkStatus] = useState('');
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+    const toggleAll = () => {
+        if (selectedIds.length === invoices.data.length) setSelectedIds([]);
+        else setSelectedIds(invoices.data.map(i => i.id));
+    };
+    const handleBulkStatus = () => {
+        if (!bulkStatus) return;
+        router.post(route('invoices.bulkUpdateStatus'), { ids: selectedIds, status: bulkStatus }, { onSuccess: () => { setSelectedIds([]); setBulkStatus(''); } });
+    };
+
     const { data, setData, post, processing } = useForm({
         number: '',
         customer_id: '',
@@ -22,7 +38,7 @@ export default function InvoicesIndex({ invoices, customers, projects, filters, 
         e.preventDefault();
         const url = new URL(route('invoices.index'));
         if (search) url.searchParams.set('search', search);
-        window.location.href = url.toString();
+        router.visit(url.toString());
     };
 
     const handleSubmit = (e) => {
@@ -49,53 +65,116 @@ export default function InvoicesIndex({ invoices, customers, projects, filters, 
                 title="Rechnungen"
                 subtitle="Verwalten Sie Ihre Rechnungen"
                 actions={
-                    <Button onClick={() => setShowModal(true)}>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Neue Rechnung
-                    </Button>
+                    <div className="flex gap-2">
+                        <a href={route('export.invoices')} className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            CSV Export
+                        </a>
+                        <Button onClick={() => setShowModal(true)}>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Neue Rechnung
+                        </Button>
+                    </div>
                 }
             />
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                {invoices.data.length === 0 ? (
-                    <EmptyState
-                        title="Noch keine Rechnungen vorhanden"
-                        description="Erstellen Sie Ihre erste Rechnung, um zu beginnen."
-                        actionLabel="Erste Rechnung erstellen"
-                        onAction={() => setShowModal(true)}
-                    />
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-100">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nummer</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kunde</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Betrag</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fällig</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {invoices.data.map((invoice) => (
-                                    <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <Link href={route('invoices.show', invoice.id)} className="font-medium text-gray-900 hover:text-primary-600 transition-colors">{invoice.number}</Link>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{invoice.customer?.name || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{invoice.total ? parseFloat(invoice.total).toLocaleString('de-DE') + ' €' : '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusInfo(invoice.status).color}`}>{getStatusInfo(invoice.status).label}</span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('de-DE') : '-'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+            {/* Bulk Action Bar */}
+            {selectedIds.length > 0 && (
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+                    <span className="text-sm text-primary-800 font-medium">{selectedIds.length} ausgewaehlt</span>
+                    <div className="flex gap-2 items-center">
+                        <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-sm">
+                            <option value="">Status aendern...</option>
+                            <option value="draft">Entwurf</option>
+                            <option value="sent">Gesendet</option>
+                            <option value="paid">Bezahlt</option>
+                        </select>
+                        {bulkStatus && <Button onClick={handleBulkStatus}>Anwenden</Button>}
+                        <Button variant="secondary" onClick={() => setSelectedIds([])}>Aufheben</Button>
                     </div>
+                </div>
+            )}
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                {invoices.data.length === 0 ? (
+                    <div className="px-6 py-12">
+                        <EmptyState
+                            title="Noch keine Rechnungen vorhanden"
+                            description="Erstellen Sie Ihre erste Rechnung, um zu beginnen."
+                            actionLabel="Erste Rechnung erstellen"
+                            onAction={() => setShowModal(true)}
+                        />
+                    </div>
+                ) : (
+                    <>
+                        {/* Desktop Table */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-10">
+                                            <input type="checkbox" checked={selectedIds.length === invoices.data.length && invoices.data.length > 0} onChange={toggleAll} className="rounded border-gray-300" />
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nummer</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kunde</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Betrag</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fällig</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {invoices.data.map((invoice) => (
+                                        <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <input type="checkbox" checked={selectedIds.includes(invoice.id)} onChange={() => toggleSelect(invoice.id)} className="rounded border-gray-300" />
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <Link href={route('invoices.show', invoice.id)} className="font-medium text-gray-900 hover:text-primary-600 transition-colors">{invoice.number}</Link>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-600">{invoice.customer?.name || '-'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{invoice.total ? parseFloat(invoice.total).toLocaleString('de-DE') + ' €' : '-'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 py-1 text-xs rounded-full ${getStatusInfo(invoice.status).color}`}>{getStatusInfo(invoice.status).label}</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-600">{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('de-DE') : '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-gray-100">
+                            {invoices.data.map((invoice) => (
+                                <div key={invoice.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-start gap-3">
+                                            <input type="checkbox" checked={selectedIds.includes(invoice.id)} onChange={() => toggleSelect(invoice.id)} className="rounded border-gray-300 mt-1" />
+                                            <div>
+                                                <Link href={route('invoices.show', invoice.id)} className="font-medium text-gray-900 hover:text-primary-600">
+                                                    {invoice.number}
+                                                </Link>
+                                                <p className="text-sm text-gray-500">{invoice.customer?.name || '-'}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusInfo(invoice.status).color}`}>{getStatusInfo(invoice.status).label}</span>
+                                    </div>
+                                    <div className="mt-2 ml-8 flex items-center justify-between">
+                                        <span className="font-medium text-gray-900">{invoice.total ? parseFloat(invoice.total).toLocaleString('de-DE') + ' €' : '-'}</span>
+                                        {invoice.due_date && (
+                                            <span className="text-sm text-gray-500">{new Date(invoice.due_date).toLocaleDateString('de-DE')}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
+
+                {/* Pagination */}
+                <Pagination links={invoices.links} from={invoices.from} to={invoices.to} total={invoices.total} entityName="Rechnungen" />
             </div>
 
             {showModal && (

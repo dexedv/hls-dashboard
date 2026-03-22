@@ -48,14 +48,15 @@ export default function Create() {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Datum <span className="text-red-500">*</span></label>
                             <input
                                 type="date"
                                 value={data.date}
                                 onChange={(e) => setData('date', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.date ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
                         </div>
 
                         <div>
@@ -63,7 +64,7 @@ export default function Create() {
                             <select
                                 value={data.project_id}
                                 onChange={(e) => setData('project_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.project_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="">Kein Projekt</option>
                                 {projects && projects.map((project) => (
@@ -72,6 +73,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.project_id && <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>}
                         </div>
 
                         <div>
@@ -79,7 +81,7 @@ export default function Create() {
                             <select
                                 value={data.task_id}
                                 onChange={(e) => setData('task_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.task_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="">Keine Aufgabe</option>
                                 {tasks && tasks.map((task) => (
@@ -88,6 +90,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.task_id && <p className="text-red-500 text-sm mt-1">{errors.task_id}</p>}
                         </div>
 
                         <div>
@@ -96,8 +99,9 @@ export default function Create() {
                                 type="time"
                                 value={data.start_time}
                                 onChange={(e) => setData('start_time', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.start_time ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.start_time && <p className="text-red-500 text-sm mt-1">{errors.start_time}</p>}
                         </div>
 
                         <div>
@@ -106,8 +110,9 @@ export default function Create() {
                                 type="time"
                                 value={data.end_time}
                                 onChange={(e) => setData('end_time', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.end_time ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.end_time && <p className="text-red-500 text-sm mt-1">{errors.end_time}</p>}
                         </div>
 
                         <div className="md:col-span-2">
@@ -116,8 +121,9 @@ export default function Create() {
                                 value={data.description}
                                 onChange={(e) => setData('description', e.target.value)}
                                 rows={3}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                         </div>
                     </div>
                 </div>

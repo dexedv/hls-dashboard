@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
@@ -13,7 +13,7 @@ export default function TeamIndex({ users, labels }) {
         e.preventDefault();
         const url = new URL(route('team.index'));
         if (search) url.searchParams.set('search', search);
-        window.location.href = url.toString();
+        router.visit(url.toString());
     };
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -64,7 +64,7 @@ export default function TeamIndex({ users, labels }) {
                 </div>
             </PageHeader>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 {users.data.length === 0 ? (
                     <EmptyState
                         title="Noch keine Teammitglieder vorhanden"
@@ -73,16 +73,16 @@ export default function TeamIndex({ users, labels }) {
                         onAction={() => setShowModal(true)}
                     />
                 ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
                         {users.data.map((user) => (
-                            <div key={user.id} className="p-4 hover:bg-gray-50 flex items-center justify-between transition-colors">
+                            <div key={user.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                                         <span className="text-primary-600 font-medium">{user.name.charAt(0)}</span>
                                     </div>
                                     <div>
-                                        <p className="font-medium text-gray-900">{user.name}</p>
-                                        <p className="text-sm text-gray-500">{user.email}</p>
+                                        <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -99,8 +99,8 @@ export default function TeamIndex({ users, labels }) {
                                             ))}
                                         </div>
                                     )}
-                                    <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">{roleLabels[user.role] || user.role}</span>
-                                    <Link href={route('team.edit', user.id)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                    <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">{roleLabels[user.role] || user.role}</span>
+                                    <Link href={route('team.edit', user.id)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>

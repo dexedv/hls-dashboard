@@ -8,7 +8,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Willkommen beim HLS Dashboard</h1>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Willkommen beim {{ config('app.name', 'Dashboard') }}</h1>
         <p class="text-gray-600 max-w-md mx-auto">
             Die Installation dauert nur wenige Minuten. Richten Sie Ihre Datenbank ein und erstellen Sie Ihren Administrator-Account.
         </p>
@@ -56,7 +56,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('install.database') }}" method="GET">
+            <form action="{{ route('install.eula') }}" method="GET">
                 <button type="submit" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
                     Installation starten
                 </button>

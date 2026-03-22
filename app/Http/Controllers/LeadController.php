@@ -44,7 +44,7 @@ class LeadController extends Controller
      */
     public function create(Request $request)
     {
-        $customers = Customer::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
         return Inertia::render('Leads/Create', [
             'customers' => $customers,
             'customer_id' => $request->customer_id,
@@ -93,7 +93,7 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
-        $customers = Customer::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
         return Inertia::render('Leads/Edit', [
             'lead' => $lead,
             'customers' => $customers,

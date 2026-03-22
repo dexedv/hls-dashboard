@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader, { Button } from '@/Components/PageHeader';
 import EmptyState from '@/Components/EmptyState';
@@ -16,7 +16,7 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
             });
-            window.location.reload();
+            router.reload();
         } catch (error) {
             alert('Sync fehlgeschlagen');
         }
@@ -39,7 +39,7 @@ export default function EmailIndex({ account, folders = [], currentFolder = null
                         title="E-Mail einrichten"
                         description="Richten Sie Ihr E-Mail-Konto ein, um E-Mails direkt im Dashboard zu lesen und zu senden. Ihre Daten werden verschlüsselt und sind nur für Sie sichtbar."
                         actionLabel="E-Mail-Konto einrichten"
-                        onAction={() => window.location.href = '/email/settings'}
+                        onAction={() => router.visit(route('email.settings'))}
                     />
                 </div>
             </DashboardLayout>

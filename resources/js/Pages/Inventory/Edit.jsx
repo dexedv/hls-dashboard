@@ -13,6 +13,7 @@ export default function Edit({ item }) {
         current_stock: item.current_stock ?? 0,
         location: item.location || '',
         barcode: item.barcode || '',
+        unit_price: item.unit_price ?? 0,
     });
 
     const handleSubmit = (e) => {
@@ -70,6 +71,11 @@ export default function Edit({ item }) {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Mindestbestand</label>
                             <input type="number" value={data.min_stock} onChange={e => setData('min_stock', e.target.value)} min="0" className={inputClass} />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Stueckpreis (EUR)</label>
+                        <input type="number" step="0.01" value={data.unit_price} onChange={e => setData('unit_price', e.target.value)} min="0" className={inputClass} />
                     </div>
 
                     <div>

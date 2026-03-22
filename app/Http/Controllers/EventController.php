@@ -22,7 +22,7 @@ class EventController extends Controller
         }
 
         $events = $query->orderBy('start', 'asc')->get();
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Calendar/Index', [
             'events' => $events,
@@ -35,7 +35,7 @@ class EventController extends Controller
      */
     public function create()
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Calendar/Create', [
             'projects' => $projects,
         ]);
@@ -65,11 +65,22 @@ class EventController extends Controller
     }
 
     /**
+     * Display the specified event.
+     */
+    public function show(Event $event)
+    {
+        $event->load('project');
+        return Inertia::render('Calendar/Show', [
+            'event' => $event,
+        ]);
+    }
+
+    /**
      * Show the form for editing the specified event.
      */
     public function edit(Event $event)
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Calendar/Edit', [
             'event' => $event,
             'projects' => $projects,

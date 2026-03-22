@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 
@@ -97,10 +97,10 @@ export default function CalendarIndex({ events, projects }) {
             </PageHeader>
 
             {/* Calendar */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 {/* Calendar Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                         {new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(currentDate)}
                     </h2>
                     <div className="flex gap-2">
@@ -109,7 +109,7 @@ export default function CalendarIndex({ events, projects }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                         </IconButton>
-                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                             Heute
                         </button>
                         <IconButton onClick={nextMonth}>
@@ -125,7 +125,7 @@ export default function CalendarIndex({ events, projects }) {
                     {/* Day Names */}
                     <div className="grid grid-cols-7 gap-1 mb-2">
                         {dayNames.map(day => (
-                            <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                            <div key={day} className="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">
                                 {day}
                             </div>
                         ))}
@@ -138,20 +138,20 @@ export default function CalendarIndex({ events, projects }) {
                             const isToday = day && day.toDateString() === new Date().toDateString();
 
                             return (
-                                <div key={index} className={`min-h-[100px] border rounded-xl p-1 ${day ? 'bg-white hover:shadow-md' : 'bg-gray-50'} ${isToday ? 'border-primary-500 ring-2 ring-primary-100' : 'border-gray-100'} transition-shadow`}>
+                                <div key={index} className={`min-h-[100px] border rounded-xl p-1 ${day ? 'bg-white dark:bg-gray-800 hover:shadow-md' : 'bg-gray-50 dark:bg-gray-700'} ${isToday ? 'border-primary-500 ring-2 ring-primary-100 dark:ring-primary-900' : 'border-gray-100 dark:border-gray-700'} transition-shadow`}>
                                     {day && (
                                         <>
-                                            <div className={`text-sm font-medium mb-1 ${isToday ? 'text-primary-600' : 'text-gray-700'}`}>
+                                            <div className={`text-sm font-medium mb-1 ${isToday ? 'text-primary-600' : 'text-gray-700 dark:text-gray-300'}`}>
                                                 {day.getDate()}
                                             </div>
                                             <div className="space-y-1">
                                                 {dayEvents.slice(0, 3).map(event => (
-                                                    <div key={event.id} className="text-xs p-1 bg-primary-100 text-primary-800 rounded truncate">
+                                                    <div key={event.id} className="text-xs p-1 bg-primary-100 text-primary-800 rounded truncate cursor-pointer hover:bg-primary-200 transition-colors" onClick={() => router.visit(route('calendar.show', event.id))}>
                                                         {event.title}
                                                     </div>
                                                 ))}
                                                 {dayEvents.length > 3 && (
-                                                    <div className="text-xs text-gray-500">+{dayEvents.length - 3} mehr</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">+{dayEvents.length - 3} mehr</div>
                                                 )}
                                             </div>
                                         </>
@@ -166,9 +166,9 @@ export default function CalendarIndex({ events, projects }) {
             {/* Create Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-gray-900">Neuer Termin</h2>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Neuer Termin</h2>
                             <IconButton onClick={() => setShowModal(false)}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -178,27 +178,27 @@ export default function CalendarIndex({ events, projects }) {
                         <form onSubmit={handleSubmit} className="p-6">
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
-                                    <input type="text" value={data.title} onChange={(e) => setData('title', e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm" required />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titel *</label>
+                                    <input type="text" value={data.title} onChange={(e) => setData('title', e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-4 py-2 text-sm" required />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
-                                    <textarea value={data.description} onChange={(e) => setData('description', e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm" rows={2} />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Beschreibung</label>
+                                    <textarea value={data.description} onChange={(e) => setData('description', e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-4 py-2 text-sm" rows={2} />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
-                                        <input type="datetime-local" value={data.start} onChange={(e) => setData('start', e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm" required />
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start</label>
+                                        <input type="datetime-local" value={data.start} onChange={(e) => setData('start', e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-4 py-2 text-sm" required />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Ende</label>
-                                        <input type="datetime-local" value={data.end} onChange={(e) => setData('end', e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm" />
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ende</label>
+                                        <input type="datetime-local" value={data.end} onChange={(e) => setData('end', e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-4 py-2 text-sm" />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="flex items-center gap-2">
                                         <input type="checkbox" checked={data.all_day} onChange={(e) => setData('all_day', e.target.checked)} className="rounded" />
-                                        <span className="text-sm text-gray-700">Ganztägig</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Ganztägig</span>
                                     </label>
                                 </div>
                             </div>

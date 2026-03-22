@@ -22,6 +22,10 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 
+# License tools (private keys - NEVER commit!)
+/tools/private.pem
+/tools/public.pem
+
 # Ignore cached files but keep directory structure
 /bootstrap/cache/*.php
 !/bootstrap/cache/.gitignore

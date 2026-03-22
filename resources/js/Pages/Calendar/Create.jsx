@@ -55,7 +55,7 @@ export default function Create() {
                                 type="text"
                                 value={data.title}
                                 onChange={(e) => setData('title', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                className={`w-full border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500`}
                                 required
                             />
                             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
@@ -95,9 +95,10 @@ export default function Create() {
                                 type="datetime-local"
                                 value={data.start}
                                 onChange={(e) => setData('start', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                className={`w-full border ${errors.start ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500`}
                                 required
                             />
+                            {errors.start && <p className="text-red-500 text-sm mt-1">{errors.start}</p>}
                         </div>
 
                         <div>
@@ -106,9 +107,10 @@ export default function Create() {
                                 type="datetime-local"
                                 value={data.end}
                                 onChange={(e) => setData('end', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                className={`w-full border ${errors.end ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500`}
                                 required
                             />
+                            {errors.end && <p className="text-red-500 text-sm mt-1">{errors.end}</p>}
                         </div>
 
                         <div>

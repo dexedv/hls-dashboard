@@ -48,14 +48,15 @@ export default function Create() {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Titel <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
                                 value={data.title}
                                 onChange={(e) => setData('title', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
                         </div>
 
                         <div>
@@ -63,7 +64,7 @@ export default function Create() {
                             <select
                                 value={data.category}
                                 onChange={(e) => setData('category', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.category ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="general">Allgemein</option>
                                 <option value="idea">Idee</option>
@@ -71,6 +72,7 @@ export default function Create() {
                                 <option value="todo">Aufgabe</option>
                                 <option value="important">Wichtig</option>
                             </select>
+                            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                         </div>
 
                         <div>
@@ -78,7 +80,7 @@ export default function Create() {
                             <select
                                 value={data.customer_id}
                                 onChange={(e) => setData('customer_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.customer_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="">Kein Kunde</option>
                                 {customers && customers.map((customer) => (
@@ -87,6 +89,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.customer_id && <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>}
                         </div>
 
                         <div>
@@ -94,7 +97,7 @@ export default function Create() {
                             <select
                                 value={data.project_id}
                                 onChange={(e) => setData('project_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.project_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="">Kein Projekt</option>
                                 {projects && projects.map((project) => (
@@ -103,6 +106,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.project_id && <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>}
                         </div>
 
                         <div className="flex items-center mt-6">
@@ -122,8 +126,9 @@ export default function Create() {
                                 value={data.content}
                                 onChange={(e) => setData('content', e.target.value)}
                                 rows={8}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.content ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content}</p>}
                         </div>
                     </div>
                 </div>

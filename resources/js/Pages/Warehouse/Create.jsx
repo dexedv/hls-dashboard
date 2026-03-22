@@ -55,7 +55,7 @@ export default function Create() {
                             <select
                                 value={data.movement_type}
                                 onChange={(e) => setData('movement_type', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.movement_type ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             >
                                 <option value="in">Wareneingang</option>
@@ -63,6 +63,7 @@ export default function Create() {
                                 <option value="adjustment">Bestandsanpassung</option>
                                 <option value="transfer">Umlagerung</option>
                             </select>
+                            {errors.movement_type && <p className="text-red-500 text-sm mt-1">{errors.movement_type}</p>}
                         </div>
 
                         <div>
@@ -70,7 +71,7 @@ export default function Create() {
                             <select
                                 value={data.item_id}
                                 onChange={(e) => setData('item_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.item_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             >
                                 <option value="">Artikel wählen</option>
@@ -80,6 +81,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.item_id && <p className="text-red-500 text-sm mt-1">{errors.item_id}</p>}
                         </div>
 
                         <div>
@@ -88,10 +90,11 @@ export default function Create() {
                                 type="number"
                                 value={data.quantity}
                                 onChange={(e) => setData('quantity', parseFloat(e.target.value))}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.quantity ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                                 min="1"
                             />
+                            {errors.quantity && <p className="text-red-500 text-sm mt-1">{errors.quantity}</p>}
                         </div>
 
                         <div>

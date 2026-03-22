@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Project;
 use App\Models\User;
 use App\Helpers\StatusHelper;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -58,8 +59,8 @@ class TicketController extends Controller
      */
     public function create(Request $request)
     {
-        $customers = Customer::all();
-        $projects = Project::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $users = User::all();
 
         return Inertia::render('Tickets/Create', [
@@ -89,7 +90,17 @@ class TicketController extends Controller
         $validated['status'] = 'open';
         $validated['priority'] = $validated['priority'] ?? 'medium';
 
-        Ticket::create($validated);
+        $ticket = Ticket::create($validated);
+
+        if (!empty($validated['assigned_to'])) {
+            NotificationService::notifyUser(
+                $validated['assigned_to'],
+                'Neues Ticket zugewiesen',
+                'Ihnen wurde das Ticket "' . $ticket->title . '" zugewiesen.',
+                'info',
+                route('tickets.show', $ticket->id)
+            );
+        }
 
         return redirect()->route('tickets.index')
             ->with('success', 'Ticket erfolgreich erstellt.');
@@ -112,8 +123,8 @@ class TicketController extends Controller
      */
     public function edit(Ticket $ticket)
     {
-        $customers = Customer::all();
-        $projects = Project::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $users = User::all();
 
         return Inertia::render('Tickets/Edit', [

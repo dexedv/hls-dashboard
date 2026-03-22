@@ -13,12 +13,5 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'install/*',
-        'chat/*',
-        'roles/permissions',
-        'roles/reset',
-        'database/execute',
-        'database/clear-cache',
-        'database/optimize',
-        'database/backup',
     ];
 }

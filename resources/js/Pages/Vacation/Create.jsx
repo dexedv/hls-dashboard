@@ -44,11 +44,11 @@ export default function Create() {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Urlaubsart</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Urlaubsart <span className="text-red-500">*</span></label>
                             <select
                                 value={data.leave_type}
                                 onChange={(e) => setData('leave_type', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.leave_type ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="vacation">Urlaub</option>
                                 <option value="sick_leave">Krankheit</option>
@@ -56,30 +56,33 @@ export default function Create() {
                                 <option value="unpaid_leave">Unbezahlter Urlaub</option>
                                 <option value="home_office">Home Office</option>
                             </select>
+                            {errors.leave_type && <p className="text-red-500 text-sm mt-1">{errors.leave_type}</p>}
                         </div>
 
                         <div></div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Von *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Von <span className="text-red-500">*</span></label>
                             <input
                                 type="date"
                                 value={data.start_date}
                                 onChange={(e) => setData('start_date', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.start_date ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.start_date && <p className="text-red-500 text-sm mt-1">{errors.start_date}</p>}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Bis *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Bis <span className="text-red-500">*</span></label>
                             <input
                                 type="date"
                                 value={data.end_date}
                                 onChange={(e) => setData('end_date', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.end_date ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.end_date && <p className="text-red-500 text-sm mt-1">{errors.end_date}</p>}
                         </div>
 
                         <div className="md:col-span-2">
@@ -88,9 +91,10 @@ export default function Create() {
                                 value={data.notes}
                                 onChange={(e) => setData('notes', e.target.value)}
                                 rows={4}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.notes ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 placeholder="Optionale Notizen zum Urlaubsantrag..."
                             />
+                            {errors.notes && <p className="text-red-500 text-sm mt-1">{errors.notes}</p>}
                         </div>
                     </div>
                 </div>

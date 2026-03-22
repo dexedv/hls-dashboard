@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 
 export default function EmailSettings({ account }) {
     const { auth } = usePage().props;
@@ -19,7 +19,7 @@ export default function EmailSettings({ account }) {
 
             if (response.ok) {
                 alert('E-Mail-Konto gespeichert!');
-                window.location.href = '/email';
+                router.visit(route('email.index'));
             } else {
                 alert('Fehler beim Speichern');
             }

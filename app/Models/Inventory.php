@@ -21,11 +21,13 @@ class Inventory extends Model
         'current_stock',
         'location',
         'barcode',
+        'unit_price',
     ];
 
     protected $casts = [
         'min_stock' => 'integer',
         'current_stock' => 'integer',
+        'unit_price' => 'decimal:2',
     ];
 
     /**

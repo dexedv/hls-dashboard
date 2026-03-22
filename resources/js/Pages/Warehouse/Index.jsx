@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
@@ -74,6 +74,29 @@ export default function WarehouseIndex({ stats, items, allItems, recentMovements
                     <p className="text-sm font-medium text-gray-500">Niedriger Bestand</p>
                     <p className="text-2xl font-bold text-red-600 mt-2">{stats?.lowStock || 0}</p>
                 </div>
+            </div>
+
+            {/* Barcode Scanner Input */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Barcode-Scanner</h3>
+                <p className="text-xs text-gray-500 mb-3">Scannen Sie einen Barcode oder geben Sie ihn manuell ein</p>
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const barcode = e.target.barcode.value;
+                    if (barcode) {
+                        const item = inventoryData.find(i => i.barcode === barcode) || (allItems || []).find(i => i.barcode === barcode);
+                        if (item) {
+                            setData('item_id', item.id);
+                            setShowModal(true);
+                        } else {
+                            router.visit(route('inventory.index', { search: barcode }));
+                        }
+                        e.target.barcode.value = '';
+                    }
+                }} className="flex gap-2">
+                    <input name="barcode" type="text" placeholder="Barcode scannen oder eingeben..." autoFocus className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all" />
+                    <Button type="submit">Suchen</Button>
+                </form>
             </div>
 
             {/* Quick Links */}

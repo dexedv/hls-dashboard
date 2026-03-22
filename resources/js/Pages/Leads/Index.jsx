@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import StatusBadge from '@/Components/StatusBadge';
 import EmptyState from '@/Components/EmptyState';
 import SearchInput from '@/Components/SearchInput';
@@ -24,7 +24,7 @@ export default function LeadsIndex({ leads, filters, statuses = [] }) {
         e.preventDefault();
         const url = new URL(route('leads.index'));
         if (search) url.searchParams.set('search', search);
-        window.location.href = url.toString();
+        router.visit(url.toString());
     };
 
     const handleSubmit = (e) => {

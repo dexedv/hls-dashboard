@@ -175,6 +175,28 @@ class EnvManager
     }
 
     /**
+     * Set a single value in the .env file
+     */
+    public function setEnvValue(string $key, string $value): bool
+    {
+        if (!File::exists($this->envPath)) {
+            return File::put($this->envPath, "{$key}={$value}\n") !== false;
+        }
+
+        $content = File::get($this->envPath);
+
+        if (str_contains($content, "{$key}=")) {
+            // Replace existing
+            $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
+        } else {
+            // Append
+            $content .= "\n{$key}={$value}\n";
+        }
+
+        return File::put($this->envPath, $content) !== false;
+    }
+
+    /**
      * Generate a new APP_KEY
      */
     public function generateKey(): string

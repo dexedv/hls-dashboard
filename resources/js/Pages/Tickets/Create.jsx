@@ -53,9 +53,10 @@ export default function Create() {
                                 type="text"
                                 value={data.title}
                                 onChange={(e) => setData('title', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
                         </div>
 
                         <div>
@@ -63,7 +64,7 @@ export default function Create() {
                             <select
                                 value={data.category}
                                 onChange={(e) => setData('category', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.category ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="support">Support</option>
                                 <option value="bug">Fehler</option>
@@ -71,6 +72,7 @@ export default function Create() {
                                 <option value="billing">Abrechnung</option>
                                 <option value="other">Sonstiges</option>
                             </select>
+                            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                         </div>
 
                         <div>
@@ -78,13 +80,14 @@ export default function Create() {
                             <select
                                 value={data.priority}
                                 onChange={(e) => setData('priority', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.priority ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="low">Niedrig</option>
                                 <option value="medium">Mittel</option>
                                 <option value="high">Hoch</option>
                                 <option value="critical">Kritisch</option>
                             </select>
+                            {errors.priority && <p className="text-red-500 text-sm mt-1">{errors.priority}</p>}
                         </div>
 
                         <div>
@@ -92,7 +95,7 @@ export default function Create() {
                             <select
                                 value={data.customer_id}
                                 onChange={(e) => setData('customer_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.customer_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="">Kein Kunde</option>
                                 {customers && customers.map((customer) => (
@@ -101,6 +104,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.customer_id && <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>}
                         </div>
 
                         <div>
@@ -108,7 +112,7 @@ export default function Create() {
                             <select
                                 value={data.project_id}
                                 onChange={(e) => setData('project_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.project_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="">Kein Projekt</option>
                                 {projects && projects.map((project) => (
@@ -117,6 +121,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.project_id && <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>}
                         </div>
 
                         <div className="md:col-span-2">
@@ -125,9 +130,10 @@ export default function Create() {
                                 value={data.description}
                                 onChange={(e) => setData('description', e.target.value)}
                                 rows={6}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                         </div>
                     </div>
                 </div>

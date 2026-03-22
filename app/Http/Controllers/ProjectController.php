@@ -31,7 +31,7 @@ class ProjectController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $customers = Customer::orderBy('name')->get();
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
@@ -47,7 +47,7 @@ class ProjectController extends Controller
      */
     public function create(Request $request)
     {
-        $customers = Customer::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Projects/Create', [
             'customers' => $customers,
             'customer_id' => $request->customer_id,
@@ -99,7 +99,7 @@ class ProjectController extends Controller
     public function edit($id)
     {
         $project = Project::findOrFail($id);
-        $customers = Customer::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Projects/Edit', [
             'project' => $project,
             'customers' => $customers,

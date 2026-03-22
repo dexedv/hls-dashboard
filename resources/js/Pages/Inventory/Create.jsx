@@ -58,9 +58,10 @@ export default function Create() {
                                 type="text"
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             />
+                            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                         </div>
 
                         <div>
@@ -69,8 +70,9 @@ export default function Create() {
                                 type="text"
                                 value={data.sku}
                                 onChange={(e) => setData('sku', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.sku ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.sku && <p className="text-red-500 text-sm mt-1">{errors.sku}</p>}
                         </div>
 
                         <div>
@@ -79,8 +81,9 @@ export default function Create() {
                                 type="text"
                                 value={data.barcode}
                                 onChange={(e) => setData('barcode', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.barcode ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.barcode && <p className="text-red-500 text-sm mt-1">{errors.barcode}</p>}
                         </div>
 
                         <div>
@@ -89,9 +92,10 @@ export default function Create() {
                                 type="text"
                                 value={data.category}
                                 onChange={(e) => setData('category', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.category ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 placeholder="z.B. Elektronik, Werkzeug"
                             />
+                            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                         </div>
 
                         <div>
@@ -99,7 +103,7 @@ export default function Create() {
                             <select
                                 value={data.unit}
                                 onChange={(e) => setData('unit', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.unit ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="pcs">Stück</option>
                                 <option value="kg">Kilogramm</option>
@@ -107,6 +111,7 @@ export default function Create() {
                                 <option value="l">Liter</option>
                                 <option value="box">Karton</option>
                             </select>
+                            {errors.unit && <p className="text-red-500 text-sm mt-1">{errors.unit}</p>}
                         </div>
 
                         <div>
@@ -115,8 +120,9 @@ export default function Create() {
                                 type="number"
                                 value={data.min_stock}
                                 onChange={(e) => setData('min_stock', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.min_stock ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.min_stock && <p className="text-red-500 text-sm mt-1">{errors.min_stock}</p>}
                         </div>
 
                         <div>
@@ -125,8 +131,9 @@ export default function Create() {
                                 type="number"
                                 value={data.current_stock}
                                 onChange={(e) => setData('current_stock', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.current_stock ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.current_stock && <p className="text-red-500 text-sm mt-1">{errors.current_stock}</p>}
                         </div>
 
                         <div>
@@ -136,8 +143,9 @@ export default function Create() {
                                 step="0.01"
                                 value={data.purchase_price}
                                 onChange={(e) => setData('purchase_price', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.purchase_price ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.purchase_price && <p className="text-red-500 text-sm mt-1">{errors.purchase_price}</p>}
                         </div>
 
                         <div>
@@ -147,8 +155,9 @@ export default function Create() {
                                 step="0.01"
                                 value={data.sale_price}
                                 onChange={(e) => setData('sale_price', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.sale_price ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.sale_price && <p className="text-red-500 text-sm mt-1">{errors.sale_price}</p>}
                         </div>
 
                         <div className="md:col-span-2">
@@ -157,8 +166,9 @@ export default function Create() {
                                 value={data.description}
                                 onChange={(e) => setData('description', e.target.value)}
                                 rows={4}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             />
+                            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                         </div>
                     </div>
                 </div>

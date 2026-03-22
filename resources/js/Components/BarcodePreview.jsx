@@ -18,7 +18,7 @@ export default function BarcodePreview({ value, format = 'CODE128', width = 2, h
                 });
             } catch (e) {
                 // Fallback for invalid barcode values
-                console.warn('Barcode render error:', e.message);
+                // Invalid barcode value - silently ignore
             }
         }
     }, [value, format, width, height, displayValue]);

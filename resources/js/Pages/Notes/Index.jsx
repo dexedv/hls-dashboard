@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
+import Pagination from '@/Components/Pagination';
 
 export default function NotesIndex({ notes, pinned, projects, customers, filters }) {
     const [search, setSearch] = useState(filters?.search || '');
@@ -12,7 +13,7 @@ export default function NotesIndex({ notes, pinned, projects, customers, filters
         e.preventDefault();
         const url = new URL(route('notes.index'));
         if (search) url.searchParams.set('search', search);
-        window.location.href = url.toString();
+        router.visit(url.toString());
     };
 
     const { data, setData, post, processing } = useForm({
@@ -110,18 +111,7 @@ export default function NotesIndex({ notes, pinned, projects, customers, filters
             </div>
 
             {/* Pagination */}
-            {notes.links && notes.links.length > 3 && (
-                <div className="mt-4 flex justify-center gap-2">
-                    {notes.links.map((link, index) => (
-                        <Link
-                            key={index}
-                            href={link.url || '#'}
-                            className={`px-3 py-1 rounded ${link.active ? 'bg-primary-600 text-white' : 'bg-white border'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ))}
-                </div>
-            )}
+            <Pagination links={notes.links} from={notes.from} to={notes.to} total={notes.total} entityName="Notizen" />
 
             {/* Create Modal */}
             {showModal && (

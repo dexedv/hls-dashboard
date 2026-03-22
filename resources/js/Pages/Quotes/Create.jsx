@@ -137,11 +137,11 @@ export default function Create() {
                         <h2 className="text-lg font-semibold mb-4">Details</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Kunde *</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Kunde <span className="text-red-500">*</span></label>
                                 <select
                                     value={data.customer_id}
                                     onChange={(e) => setData('customer_id', e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                    className={`w-full border ${errors.customer_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                     required
                                 >
                                     <option value="">Kunde wählen</option>
@@ -151,6 +151,7 @@ export default function Create() {
                                         </option>
                                     ))}
                                 </select>
+                                {errors.customer_id && <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>}
                             </div>
 
                             <div>
@@ -158,7 +159,7 @@ export default function Create() {
                                 <select
                                     value={data.project_id}
                                     onChange={(e) => setData('project_id', e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                    className={`w-full border ${errors.project_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 >
                                     <option value="">Kein Projekt</option>
                                     {projects && projects.map((project) => (
@@ -167,6 +168,7 @@ export default function Create() {
                                         </option>
                                     ))}
                                 </select>
+                                {errors.project_id && <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>}
                             </div>
 
                             <div>
@@ -175,8 +177,9 @@ export default function Create() {
                                     type="date"
                                     value={data.valid_until}
                                     onChange={(e) => setData('valid_until', e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                    className={`w-full border ${errors.valid_until ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 />
+                                {errors.valid_until && <p className="text-red-500 text-sm mt-1">{errors.valid_until}</p>}
                             </div>
 
                             <div>
@@ -185,8 +188,9 @@ export default function Create() {
                                     value={data.notes}
                                     onChange={(e) => setData('notes', e.target.value)}
                                     rows={3}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                    className={`w-full border ${errors.notes ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 />
+                                {errors.notes && <p className="text-red-500 text-sm mt-1">{errors.notes}</p>}
                             </div>
                         </div>
                     </div>

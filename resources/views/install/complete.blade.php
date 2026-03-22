@@ -1,4 +1,4 @@
-@extends('install.layout', ['step' => 4])
+@extends('install.layout', ['step' => 7])
 
 @section('content')
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -11,7 +11,7 @@
 
             <h1 class="text-2xl font-bold text-gray-900 mb-2">Installation erfolgreich!</h1>
             <p class="text-gray-600 mb-8">
-                Das HLS Dashboard wurde erfolgreich installiert. Sie können sich jetzt mit Ihrem Admin-Account anmelden.
+                {{ config('app.name', 'Dashboard') }} wurde erfolgreich installiert. Sie können sich jetzt mit Ihrem Admin-Account anmelden.
             </p>
 
             <div class="bg-gray-50 rounded-lg p-4 mb-8 text-left max-w-md mx-auto">

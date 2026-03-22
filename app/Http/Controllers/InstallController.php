@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Services\EnvManager;
+use App\Services\LicenseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
@@ -11,10 +13,12 @@ use Illuminate\Validation\Rule;
 class InstallController extends Controller
 {
     private EnvManager $envManager;
+    private LicenseService $licenseService;
 
-    public function __construct(EnvManager $envManager)
+    public function __construct(EnvManager $envManager, LicenseService $licenseService)
     {
         $this->envManager = $envManager;
+        $this->licenseService = $licenseService;
     }
 
     /**
@@ -22,7 +26,6 @@ class InstallController extends Controller
      */
     public function index(Request $request)
     {
-        // If already installed, show option to reinstall
         $isInstalled = $this->envManager->isInstalled();
         $reinstall = $request->query('reinstall') || $request->query('mode') === 'repair';
 
@@ -34,6 +37,66 @@ class InstallController extends Controller
             'isInstalled' => $isInstalled,
             'mode' => $request->query('mode', 'install'),
         ]);
+    }
+
+    /**
+     * Show EULA page
+     */
+    public function showEula()
+    {
+        return view('install.eula');
+    }
+
+    /**
+     * Accept EULA
+     */
+    public function acceptEula(Request $request)
+    {
+        $request->validate([
+            'accept_eula' => 'required|accepted',
+        ], [
+            'accept_eula.required' => 'Sie müssen die Nutzungsbedingungen akzeptieren.',
+            'accept_eula.accepted' => 'Sie müssen die Nutzungsbedingungen akzeptieren.',
+        ]);
+
+        // Store acceptance in session for now; will be persisted after DB setup
+        $request->session()->put('eula_accepted', true);
+
+        return redirect()->route('install.license');
+    }
+
+    /**
+     * Show license key input form
+     */
+    public function showLicense()
+    {
+        return view('install.license');
+    }
+
+    /**
+     * Validate and save license key
+     */
+    public function saveLicense(Request $request)
+    {
+        $request->validate([
+            'license_key' => 'required|string|min:10',
+        ]);
+
+        $licenseKey = trim($request->input('license_key'));
+
+        // Validate RSA signature
+        $payload = $this->licenseService->validateSignature($licenseKey);
+
+        if ($payload === false) {
+            return back()
+                ->with('error', 'Ungültiger Lizenzschlüssel. Bitte überprüfen Sie Ihre Eingabe.')
+                ->withInput();
+        }
+
+        // Store license key in .env
+        $this->envManager->setEnvValue('LICENSE_KEY', $licenseKey);
+
+        return redirect()->route('install.database');
     }
 
     /**
@@ -71,7 +134,6 @@ class InstallController extends Controller
             'APP_DEBUG' => 'true',
         ];
 
-        // Add database credentials based on type
         if ($request->input('db_type') === 'sqlite') {
             $data['DB_CONNECTION'] = 'sqlite';
         } elseif ($request->input('db_type') === 'supabase') {
@@ -88,7 +150,6 @@ class InstallController extends Controller
             $data['DB_PASSWORD'] = $request->input('db_password', '');
         }
 
-        // Test database connection first
         $testResult = $this->envManager->testDatabase(
             $data['DB_CONNECTION'],
             $data['DB_HOST'] ?? null,
@@ -102,12 +163,10 @@ class InstallController extends Controller
             return back()->with('error', 'Datenbank-Verbindung fehlgeschlagen: ' . $testResult['message'])->withInput();
         }
 
-        // Write .env file
         if (!$this->envManager->writeEnv($data)) {
             return back()->with('error', 'Konfiguration konnte nicht gespeichert werden.')->withInput();
         }
 
-        // Clear config cache
         Artisan::call('config:clear');
 
         return redirect()->route('install.admin');
@@ -151,21 +210,18 @@ class InstallController extends Controller
      */
     public function saveAdmin(Request $request)
     {
-        // Run migrations first (before validation since we need the tables)
         $migrationResult = $this->envManager->runMigrations();
 
         if (!$migrationResult['success']) {
             return back()->with('error', 'Migration fehlgeschlagen: ' . $migrationResult['message'])->withInput();
         }
 
-        // Now validate
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // Create admin user with owner role
         $user = \App\Models\User::create([
             'name' => $request->input('name'),
             'email' => $request->input('email'),
@@ -174,14 +230,74 @@ class InstallController extends Controller
             'is_approved' => true,
         ]);
 
-        // Create default label
         $this->envManager->createDefaultLabel();
-
-        // Create chat messages table
         $this->envManager->createChatTable();
 
-        // Clear config cache again after migrations
+        // Save EULA acceptance
+        if ($request->session()->get('eula_accepted')) {
+            Setting::set('eula_accepted_at', now()->toIso8601String());
+        }
+
+        // Activate license from .env if present
+        $licenseKey = $this->envManager->getEnv('LICENSE_KEY');
+        if ($licenseKey) {
+            $this->licenseService->activate($licenseKey);
+        }
+
         Artisan::call('config:clear');
+
+        return redirect()->route('install.company');
+    }
+
+    /**
+     * Show company configuration form
+     */
+    public function showCompany()
+    {
+        return view('install.company');
+    }
+
+    /**
+     * Save company configuration
+     */
+    public function saveCompany(Request $request)
+    {
+        $request->validate([
+            'company_name' => 'required|string|max:255',
+            'app_logo' => 'nullable|file|max:2048|mimes:png,jpg,jpeg,svg',
+            'primary_color' => 'nullable|string|max:7',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $settings = [
+            'company_name' => $request->input('company_name'),
+            'company_address' => $request->input('company_address'),
+            'company_zip' => $request->input('company_zip'),
+            'company_city' => $request->input('company_city'),
+            'company_country' => $request->input('company_country', 'Deutschland'),
+            'company_phone' => $request->input('company_phone'),
+            'company_email' => $request->input('company_email'),
+            'company_website' => $request->input('company_website'),
+            'company_tax_id' => $request->input('company_tax_id'),
+            'company_vat_id' => $request->input('company_vat_id'),
+            'tax_rate' => $request->input('tax_rate', 19),
+            'currency' => $request->input('currency', 'EUR'),
+            'currency_symbol' => $request->input('currency', 'EUR'),
+            'app_name' => $request->input('app_name', 'Dashboard'),
+            'primary_color' => $request->input('primary_color', '#0284c7'),
+        ];
+
+        foreach ($settings as $key => $value) {
+            if ($value !== null) {
+                Setting::set($key, $value);
+            }
+        }
+
+        // Handle logo upload
+        if ($request->hasFile('app_logo')) {
+            $path = $request->file('app_logo')->store('branding', 'public');
+            Setting::set('app_logo', $path);
+        }
 
         return redirect()->route('install.complete');
     }

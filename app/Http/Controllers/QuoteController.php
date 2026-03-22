@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Quote;
 use App\Models\Customer;
 use App\Models\Project;
+use App\Models\Setting;
 use App\Helpers\StatusHelper;
+use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -45,8 +47,8 @@ class QuoteController extends Controller
      */
     public function create(Request $request)
     {
-        $customers = Customer::all();
-        $projects = Project::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Quotes/Create', [
             'customers' => $customers,
             'projects' => $projects,
@@ -85,7 +87,8 @@ class QuoteController extends Controller
         }
         unset($item);
 
-        $tax = $subtotal * 0.19;
+        $taxRate = Setting::get('tax_rate', 19);
+        $tax = $subtotal * ($taxRate / 100);
         $validated['subtotal'] = $subtotal;
         $validated['tax'] = $tax;
         $validated['total'] = $subtotal + $tax;
@@ -117,8 +120,8 @@ class QuoteController extends Controller
      */
     public function edit(Quote $quote)
     {
-        $customers = Customer::all();
-        $projects = Project::all();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $quote->load('items');
 
         return Inertia::render('Quotes/Edit', [
@@ -146,6 +149,15 @@ class QuoteController extends Controller
 
         return redirect()->route('quotes.index')
             ->with('success', 'Angebot erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Generate PDF for quote.
+     */
+    public function pdf(Quote $quote)
+    {
+        $pdf = PdfService::generateQuotePdf($quote);
+        return $pdf->download('Angebot_' . $quote->number . '.pdf');
     }
 
     /**

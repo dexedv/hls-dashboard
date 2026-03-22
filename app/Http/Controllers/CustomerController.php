@@ -106,6 +106,21 @@ class CustomerController extends Controller
     }
 
     /**
+     * Bulk delete customers.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:customers,id',
+        ]);
+
+        Customer::whereIn('id', $request->ids)->delete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' Kunden gelöscht.');
+    }
+
+    /**
      * Remove the specified customer.
      */
     public function destroy(Customer $customer)

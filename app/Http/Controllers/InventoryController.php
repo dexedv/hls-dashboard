@@ -61,10 +61,12 @@ class InventoryController extends Controller
             'current_stock' => 'nullable|integer|min:0',
             'location' => 'nullable|string|max:100',
             'barcode' => 'nullable|string',
+            'unit_price' => 'nullable|numeric|min:0',
         ]);
 
         $validated['min_stock'] = $validated['min_stock'] ?? 0;
         $validated['current_stock'] = $validated['current_stock'] ?? 0;
+        $validated['unit_price'] = $validated['unit_price'] ?? 0;
 
         if (empty($validated['barcode'])) {
             $validated['barcode'] = $this->generateBarcode();
@@ -113,6 +115,7 @@ class InventoryController extends Controller
             'current_stock' => 'nullable|integer|min:0',
             'location' => 'nullable|string|max:100',
             'barcode' => 'nullable|string',
+            'unit_price' => 'nullable|numeric|min:0',
         ]);
 
         $item->update($validated);
@@ -149,6 +152,21 @@ class InventoryController extends Controller
 
         return redirect()->back()
             ->with('success', 'Lagerbewegung erfasst.');
+    }
+
+    /**
+     * Bulk delete inventory items.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:inventories,id',
+        ]);
+
+        Inventory::whereIn('id', $request->ids)->delete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' Artikel gelöscht.');
     }
 
     /**

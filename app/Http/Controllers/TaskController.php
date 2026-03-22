@@ -37,7 +37,7 @@ class TaskController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
 
         $users = User::orderBy('name')->get(['id', 'name']);
 
@@ -56,7 +56,7 @@ class TaskController extends Controller
      */
     public function create(Request $request)
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $users = User::all();
         return Inertia::render('Tasks/Create', [
             'projects' => $projects,
@@ -107,7 +107,7 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('name')->get(['id', 'name']);
         $users = User::all();
         return Inertia::render('Tasks/Edit', [
             'task' => $task,
@@ -135,6 +135,37 @@ class TaskController extends Controller
 
         return redirect()->route('tasks.index')
             ->with('success', 'Aufgabe erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Bulk delete tasks.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:tasks,id',
+        ]);
+
+        Task::whereIn('id', $request->ids)->delete();
+
+        return redirect()->back()->with('success', count($request->ids) . ' Aufgaben gelöscht.');
+    }
+
+    /**
+     * Bulk update task status.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:tasks,id',
+            'status' => 'required|in:todo,in_progress,review,done',
+        ]);
+
+        Task::whereIn('id', $request->ids)->update(['status' => $request->status]);
+
+        return redirect()->back()->with('success', count($request->ids) . ' Aufgaben aktualisiert.');
     }
 
     /**

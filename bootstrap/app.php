@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'installed' => \App\Http\Middleware\CheckInstalled::class,
             'csrf' => \App\Http\Middleware\VerifyCsrfToken::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
+            'license' => \App\Http\Middleware\CheckLicense::class,
+            'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

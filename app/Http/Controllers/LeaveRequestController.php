@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Helpers\StatusHelper;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -26,7 +27,7 @@ class LeaveRequestController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $users = User::all();
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Vacation/Index', [
             'leaveRequests' => $leaveRequests,
@@ -125,6 +126,14 @@ class LeaveRequestController extends Controller
             'approved_at' => now(),
         ]);
 
+        NotificationService::notifyUser(
+            $leaveRequest->user_id,
+            'Urlaubsantrag genehmigt',
+            'Ihr Urlaubsantrag wurde genehmigt.',
+            'success',
+            route('vacation.show', $leaveRequest->id)
+        );
+
         return redirect()->back()
             ->with('success', 'Urlaubsantrag genehmigt.');
     }
@@ -144,6 +153,14 @@ class LeaveRequestController extends Controller
             'approved_at' => now(),
             'rejection_reason' => $validated['rejection_reason'],
         ]);
+
+        NotificationService::notifyUser(
+            $leaveRequest->user_id,
+            'Urlaubsantrag abgelehnt',
+            'Ihr Urlaubsantrag wurde leider abgelehnt.',
+            'warning',
+            route('vacation.show', $leaveRequest->id)
+        );
 
         return redirect()->back()
             ->with('success', 'Urlaubsantrag abgelehnt.');

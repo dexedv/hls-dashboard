@@ -55,7 +55,7 @@ export default function Create() {
                             <select
                                 value={data.item_id}
                                 onChange={(e) => setData('item_id', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.item_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                                 required
                             >
                                 <option value="">Artikel wählen</option>
@@ -65,6 +65,7 @@ export default function Create() {
                                     </option>
                                 ))}
                             </select>
+                            {errors.item_id && <p className="text-red-500 text-sm mt-1">{errors.item_id}</p>}
                         </div>
 
                         <div>
@@ -72,7 +73,7 @@ export default function Create() {
                             <select
                                 value={data.type}
                                 onChange={(e) => setData('type', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500"
+                                className={`w-full border ${errors.type ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="code128">Code 128</option>
                                 <option value="code39">Code 39</option>
@@ -81,6 +82,7 @@ export default function Create() {
                                 <option value="upc">UPC</option>
                                 <option value="qr">QR Code</option>
                             </select>
+                            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
                         </div>
 
                         <div className="md:col-span-2">
