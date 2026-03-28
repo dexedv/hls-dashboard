@@ -2,8 +2,11 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
 
 export default function Create() {
+    const { users } = usePage().props;
+
     const { data, setData, post, processing, errors } = useForm({
-        leave_type: 'vacation',
+        type: 'vacation',
+        user_id: '',
         start_date: '',
         end_date: '',
         notes: '',
@@ -46,20 +49,30 @@ export default function Create() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Urlaubsart <span className="text-red-500">*</span></label>
                             <select
-                                value={data.leave_type}
-                                onChange={(e) => setData('leave_type', e.target.value)}
-                                className={`w-full border ${errors.leave_type ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
+                                value={data.type}
+                                onChange={(e) => setData('type', e.target.value)}
+                                className={`w-full border ${errors.type ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
                             >
                                 <option value="vacation">Urlaub</option>
-                                <option value="sick_leave">Krankheit</option>
-                                <option value="special_leave">Sonderurlaub</option>
-                                <option value="unpaid_leave">Unbezahlter Urlaub</option>
-                                <option value="home_office">Home Office</option>
+                                <option value="sick">Krank</option>
+                                <option value="other">Sonstige</option>
                             </select>
-                            {errors.leave_type && <p className="text-red-500 text-sm mt-1">{errors.leave_type}</p>}
+                            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
                         </div>
 
-                        <div></div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mitarbeiter</label>
+                            <select
+                                value={data.user_id}
+                                onChange={(e) => setData('user_id', e.target.value)}
+                                className={`w-full border ${errors.user_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
+                            >
+                                <option value="">Eigener Antrag</option>
+                                {(users || []).map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Von <span className="text-red-500">*</span></label>

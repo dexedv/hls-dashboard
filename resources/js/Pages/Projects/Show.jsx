@@ -131,6 +131,21 @@ export default function ProjectShow({ project, statuses = [], priorities = [] })
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Projektdetails</h2>
                         <dl className="space-y-4">
+                            {project.assignees && project.assignees.length > 0 && (
+                                <div>
+                                    <dt className="text-sm font-medium text-gray-500">Mitarbeiter</dt>
+                                    <dd className="flex flex-wrap gap-2 mt-1">
+                                        {project.assignees.map(a => (
+                                            <span key={a.id} className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 px-2 py-1 rounded-full text-xs font-medium">
+                                                <span className="h-5 w-5 rounded-full bg-primary-200 flex items-center justify-center text-primary-700 font-bold text-xs flex-shrink-0">
+                                                    {a.name?.[0]?.toUpperCase()}
+                                                </span>
+                                                {a.name}
+                                            </span>
+                                        ))}
+                                    </dd>
+                                </div>
+                            )}
                             <div>
                                 <dt className="text-sm font-medium text-gray-500">Budget</dt>
                                 <dd className="text-xl font-bold text-gray-900">

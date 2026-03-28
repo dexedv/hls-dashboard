@@ -163,11 +163,37 @@ class InvoiceController extends Controller
             'issue_date' => 'nullable|date',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string',
+            'items' => 'nullable|array',
+            'items.*.description' => 'required|string',
+            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
         ]);
+
+        $items = $validated['items'] ?? null;
+        unset($validated['items']);
+
+        if ($items !== null) {
+            $subtotal = 0;
+            foreach ($items as &$item) {
+                $item['total'] = $item['quantity'] * $item['unit_price'];
+                $subtotal += $item['total'];
+            }
+            unset($item);
+
+            $taxRate = Setting::get('tax_rate', 19);
+            $validated['subtotal'] = $subtotal;
+            $validated['tax'] = $subtotal * ($taxRate / 100);
+            $validated['total'] = $subtotal + $validated['tax'];
+
+            $invoice->items()->delete();
+            foreach ($items as $item) {
+                $invoice->items()->create($item);
+            }
+        }
 
         $invoice->update($validated);
 
-        return redirect()->route('invoices.index')
+        return redirect()->route('invoices.show', $invoice->id)
             ->with('success', 'Rechnung erfolgreich aktualisiert.');
     }
 
@@ -209,7 +235,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Send invoice via email.
+     * Send invoice via email and mark as sent.
      */
     public function sendEmail(Invoice $invoice)
     {
@@ -222,7 +248,9 @@ class InvoiceController extends Controller
 
         Mail::to($email)->send(new InvoiceMail($invoice));
 
-        return redirect()->back()->with('success', 'Rechnung wurde per E-Mail gesendet.');
+        $invoice->update(['status' => 'sent']);
+
+        return redirect()->back()->with('success', 'Rechnung wurde per E-Mail gesendet und als "Gesendet" markiert.');
     }
 
     /**

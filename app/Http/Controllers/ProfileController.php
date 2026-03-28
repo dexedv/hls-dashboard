@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Event;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,9 +19,31 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+
+        $myEvents = Event::with(['project', 'customer', 'assignees'])
+            ->whereHas('assignees', fn($q) => $q->where('users.id', $user->id))
+            ->where('start', '>=', now())
+            ->orderBy('start', 'asc')
+            ->limit(10)
+            ->get()
+            ->map(fn($e) => [
+                'id'            => $e->id,
+                'title'         => $e->title,
+                'event_type'    => $e->event_type,
+                'start'         => $e->start?->toISOString(),
+                'end'           => $e->end?->toISOString(),
+                'all_day'       => $e->all_day,
+                'project_name'  => $e->project?->name,
+                'customer_name' => $e->customer?->name,
+                'tags'          => $e->tags ?? [],
+                'assignees'     => $e->assignees->map(fn($a) => ['id' => $a->id, 'name' => $a->name])->values(),
+            ]);
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            'status'          => session('status'),
+            'myEvents'        => $myEvents,
         ]);
     }
 

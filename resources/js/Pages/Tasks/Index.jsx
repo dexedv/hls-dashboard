@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import StatusBadge from '@/Components/StatusBadge';
 import Pagination from '@/Components/Pagination';
+import MultiUserSelect from '@/Components/MultiUserSelect';
 
 export default function TasksIndex({ tasks, filters, projects, users, statuses = [], priorities = [] }) {
+    const { auth } = usePage().props;
     const [selectedIds, setSelectedIds] = useState([]);
     const [bulkStatus, setBulkStatus] = useState('');
 
@@ -33,7 +35,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
         priority: 'medium',
         due_date: '',
         project_id: '',
-        assigned_to: '',
+        assigned_users: [],
     });
 
     const [showModal, setShowModal] = useState(false);
@@ -51,7 +53,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
         post(route('tasks.store'), {
             onSuccess: () => {
                 setShowModal(false);
-                setData({ title: '', description: '', status: 'todo', priority: 'medium', due_date: '', project_id: '', assigned_to: '' });
+                setData({ title: '', description: '', status: 'todo', priority: 'medium', due_date: '', project_id: '', assigned_users: [] });
             }
         });
     };
@@ -131,10 +133,16 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                     <>
                         {/* Desktop List */}
                         <div className="hidden md:block divide-y divide-gray-100 dark:divide-gray-700">
-                            {tasks.data.map((task) => (
+                            {tasks.data.map((task) => {
+                                const isAssignedToMe = task.assignees?.some(a => a.id === auth?.user?.id);
+                                return (
                                 <div
                                     key={task.id}
-                                    className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 rounded-xl mx-1 my-1"
+                                    className={`flex items-center justify-between p-4 transition-colors duration-150 rounded-xl mx-1 my-1 ${
+                                        isAssignedToMe
+                                            ? 'bg-primary-50 border border-primary-200 hover:bg-primary-100'
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
                                 >
                                     <div className="flex items-center gap-4">
                                         <input type="checkbox" checked={selectedIds.includes(task.id)} onChange={() => toggleSelect(task.id)} className="rounded border-gray-300" onClick={e => e.stopPropagation()} />
@@ -146,7 +154,12 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                                 'bg-gray-300'
                                             }`}></div>
                                             <div>
-                                                <h3 className="font-medium text-gray-900 dark:text-gray-100">{task.title}</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-medium text-gray-900 dark:text-gray-100">{task.title}</h3>
+                                                    {isAssignedToMe && (
+                                                        <span className="text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded font-medium">Ich</span>
+                                                    )}
+                                                </div>
                                                 {task.project && (
                                                     <p className="text-sm text-gray-500 dark:text-gray-400">{task.project.name}</p>
                                                 )}
@@ -154,6 +167,24 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                         </Link>
                                     </div>
                                     <div className="flex items-center gap-3">
+                                        {task.assignees && task.assignees.length > 0 && (
+                                            <span className="flex items-center gap-0.5">
+                                                {task.assignees.slice(0, 3).map(a => (
+                                                    <span key={a.id} title={a.name} className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white -ml-1 first:ml-0 ${
+                                                        a.id === auth?.user?.id
+                                                            ? 'bg-primary-600 text-white ring-2 ring-primary-400'
+                                                            : 'bg-primary-100 text-primary-700'
+                                                    }`}>
+                                                        {a.name?.[0]?.toUpperCase()}
+                                                    </span>
+                                                ))}
+                                                {task.assignees.length > 3 && (
+                                                    <span className="h-6 w-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-semibold border-2 border-white -ml-1">
+                                                        +{task.assignees.length - 3}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        )}
                                         <span className={`text-xs ${priorityIcons[task.priority]}`}>
                                             {task.priority === 'urgent' && '●●●'}
                                             {task.priority === 'high' && '●●○'}
@@ -168,7 +199,8 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Mobile Card View */}
@@ -195,8 +227,17 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                             {task.priority === 'low' && '○○○'}
                                         </span>
                                         <span className="text-sm text-gray-500">{priorityLabels[task.priority]}</span>
-                                        {task.assignee && (
-                                            <span className="text-sm text-gray-500">{task.assignee.name}</span>
+                                        {task.assignees && task.assignees.length > 0 && (
+                                            <span className="flex items-center gap-0.5">
+                                                {task.assignees.slice(0, 3).map(a => (
+                                                    <span key={a.id} title={a.name} className="h-5 w-5 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-semibold">
+                                                        {a.name?.[0]?.toUpperCase()}
+                                                    </span>
+                                                ))}
+                                                {task.assignees.length > 3 && (
+                                                    <span className="text-xs text-gray-500 ml-0.5">+{task.assignees.length - 3}</span>
+                                                )}
+                                            </span>
                                         )}
                                         {task.due_date && (
                                             <span className="text-sm text-gray-500">
@@ -293,14 +334,11 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zugewiesen an</label>
-                                        <select
-                                            value={data.assigned_to}
-                                            onChange={(e) => setData('assigned_to', e.target.value)}
-                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                        >
-                                            <option value="">Nicht zugewiesen</option>
-                                            {(users || []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                                        </select>
+                                        <MultiUserSelect
+                                            users={users || []}
+                                            selected={data.assigned_users}
+                                            onChange={(val) => setData('assigned_users', val)}
+                                        />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { DashboardSkeleton } from '@/Components/Skeleton';
@@ -58,9 +58,332 @@ const Icons = {
     ),
 };
 
+// ─── Time Widget ────────────────────────────────────────────────────────────
+function TimeWidget() {
+    const [time, setTime] = useState(new Date());
+    useEffect(() => {
+        const id = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(id);
+    }, []);
+    const weekdays = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    const months   = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    return (
+        <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-sm p-6 text-white flex flex-col justify-between min-h-[130px]">
+            <div className="text-xs font-medium uppercase tracking-wider opacity-75">Aktuelle Zeit</div>
+            <div>
+                <div className="text-4xl font-bold tabular-nums tracking-tight">
+                    {time.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>
+                <div className="text-sm opacity-80 mt-1">
+                    {weekdays[time.getDay()]}, {time.getDate()}. {months[time.getMonth()]} {time.getFullYear()}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Weather Widget ──────────────────────────────────────────────────────────
+const WMO_CODES = {
+    0: { label: 'Klarer Himmel', icon: '☀️' },
+    1: { label: 'Überwiegend klar', icon: '🌤️' },
+    2: { label: 'Teilweise bewölkt', icon: '⛅' },
+    3: { label: 'Bewölkt', icon: '☁️' },
+    45: { label: 'Nebel', icon: '🌫️' }, 48: { label: 'Gefrierender Nebel', icon: '🌫️' },
+    51: { label: 'Leichter Niesel', icon: '🌦️' }, 53: { label: 'Nieselregen', icon: '🌦️' }, 55: { label: 'Starker Niesel', icon: '🌦️' },
+    61: { label: 'Leichter Regen', icon: '🌧️' }, 63: { label: 'Regen', icon: '🌧️' }, 65: { label: 'Starker Regen', icon: '🌧️' },
+    71: { label: 'Leichter Schnee', icon: '❄️' }, 73: { label: 'Schnee', icon: '❄️' }, 75: { label: 'Starker Schnee', icon: '❄️' },
+    80: { label: 'Regenschauer', icon: '🌦️' }, 81: { label: 'Regenschauer', icon: '🌦️' }, 82: { label: 'Starke Schauer', icon: '⛈️' },
+    95: { label: 'Gewitter', icon: '⛈️' }, 96: { label: 'Gewitter mit Hagel', icon: '⛈️' }, 99: { label: 'Gewitter mit Hagel', icon: '⛈️' },
+};
+function getWeatherInfo(code) {
+    return WMO_CODES[code] || { label: 'Unbekannt', icon: '🌡️' };
+}
+
+async function fetchWeatherByCoords(lat, lon) {
+    const r = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,weather_code,wind_speed_10m` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+        `&wind_speed_unit=kmh&timezone=auto&forecast_days=4`
+    );
+    const d = await r.json();
+    return { current: d.current, daily: d.daily };
+}
+
+async function geocodeCity(name) {
+    const r = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=de&format=json`
+    );
+    const d = await r.json();
+    if (!d.results || d.results.length === 0) throw new Error('Stadt nicht gefunden');
+    return d.results[0];
+}
+
+const WEEKDAYS_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+function WeatherWidget() {
+    const [data, setData]         = useState(null);
+    const [cityName, setCityName] = useState(() => localStorage.getItem('weather_city') || '');
+    const [loading, setLoading]   = useState(true);
+    const [cityInput, setCityInput] = useState('');
+    const [showInput, setShowInput] = useState(false);
+    const [error, setError]       = useState(null);
+    const fetched = useRef(false);
+
+    const loadWeather = async (lat, lon, name) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const w = await fetchWeatherByCoords(lat, lon);
+            setData(w);
+            if (name !== null) {
+                setCityName(name);
+                localStorage.setItem('weather_city', name);
+                localStorage.setItem('weather_lat', String(lat));
+                localStorage.setItem('weather_lon', String(lon));
+            }
+        } catch {
+            setError('Wetterdaten nicht verfügbar');
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        if (fetched.current) return;
+        fetched.current = true;
+        const savedLat = localStorage.getItem('weather_lat');
+        const savedLon = localStorage.getItem('weather_lon');
+        if (savedLat && savedLon) { loadWeather(savedLat, savedLon, null); return; }
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async ({ coords }) => {
+                    try {
+                        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`);
+                        const d = await r.json();
+                        const name = d.address?.city || d.address?.town || d.address?.village || '';
+                        loadWeather(coords.latitude, coords.longitude, name);
+                    } catch { loadWeather(coords.latitude, coords.longitude, ''); }
+                },
+                () => { setLoading(false); setShowInput(true); }
+            );
+        } else { setLoading(false); setShowInput(true); }
+    }, []);
+
+    const handleCitySearch = async (e) => {
+        e.preventDefault();
+        if (!cityInput.trim()) return;
+        setLoading(true); setError(null);
+        try {
+            const geo = await geocodeCity(cityInput.trim());
+            await loadWeather(geo.latitude, geo.longitude, geo.name);
+            setShowInput(false); setCityInput('');
+        } catch { setError('Stadt nicht gefunden'); setLoading(false); }
+    };
+
+    const current = data?.current;
+    const daily   = data?.daily;
+    const info    = current ? getWeatherInfo(current.weather_code) : null;
+
+    // Build 3 forecast days (index 1,2,3 = tomorrow, day after, day+3)
+    const forecastDays = daily ? [1, 2, 3].map(i => ({
+        date:    new Date(daily.time[i]),
+        icon:    getWeatherInfo(daily.weather_code[i]).icon,
+        max:     Math.round(daily.temperature_2m_max[i]),
+        min:     Math.round(daily.temperature_2m_min[i]),
+        rain:    daily.precipitation_probability_max[i],
+    })) : [];
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 col-span-1">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    Wetter{cityName ? ` · ${cityName}` : ''}
+                </div>
+                <button onClick={() => setShowInput(v => !v)}
+                    className="text-xs text-gray-400 hover:text-primary-600 transition-colors px-1 py-0.5 rounded hover:bg-gray-100"
+                    title="Stadt ändern">✎
+                </button>
+            </div>
+
+            {/* City Input */}
+            {showInput && (
+                <form onSubmit={handleCitySearch} className="flex gap-1.5 mb-2">
+                    <input type="text" value={cityInput} onChange={e => setCityInput(e.target.value)}
+                        placeholder="Stadt..." autoFocus
+                        className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-primary-500 focus:border-transparent" />
+                    <button type="submit"
+                        className="px-2 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700">OK</button>
+                </form>
+            )}
+
+            {loading ? (
+                <div className="animate-pulse flex items-center gap-3 h-10">
+                    <div className="h-8 w-8 bg-gray-200 rounded-full" />
+                    <div className="h-5 bg-gray-200 rounded w-16"/>
+                    <div className="ml-auto flex gap-2">
+                        {[0,1,2].map(i => <div key={i} className="h-8 w-10 bg-gray-100 rounded"/>)}
+                    </div>
+                </div>
+            ) : error ? (
+                <div className="text-xs text-red-400">{error}</div>
+            ) : current ? (
+                <div className="flex items-center gap-3">
+                    {/* Current */}
+                    <span className="text-3xl leading-none flex-shrink-0">{info.icon}</span>
+                    <div className="flex-shrink-0">
+                        <div className="text-xl font-bold text-gray-900 tabular-nums leading-tight">{Math.round(current.temperature_2m)}°C</div>
+                        <div className="text-xs text-gray-400 leading-tight">{info.label} · {Math.round(current.wind_speed_10m)} km/h</div>
+                    </div>
+                    {/* Forecast */}
+                    {forecastDays.length > 0 && (
+                        <div className="ml-auto flex gap-1.5">
+                            {forecastDays.map((day, i) => (
+                                <div key={i} className="flex flex-col items-center bg-gray-50 rounded-lg px-2 py-1 min-w-[44px]">
+                                    <div className="text-xs font-medium text-gray-400">{WEEKDAYS_SHORT[day.date.getDay()]}</div>
+                                    <div className="text-base leading-tight">{day.icon}</div>
+                                    <div className="text-xs font-semibold text-gray-700">{day.max}°</div>
+                                    <div className="text-xs text-gray-400">{day.min}°</div>
+                                    {day.rain > 0 && <div className="text-xs text-blue-500">💧{day.rain}%</div>}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="text-xs text-gray-400">Stadt eingeben um Wetter zu laden</div>
+            )}
+        </div>
+    );
+}
+
+// ─── Upcoming Events Widget ──────────────────────────────────────────────────
+const EVENT_TYPE_LABELS = {
+    meeting: 'Meeting', deadline: 'Deadline', call: 'Anruf',
+    delivery: 'Lieferung', pickup: 'Abholung', reminder: 'Erinnerung', other: 'Sonstiges',
+};
+const EVENT_TYPE_COLORS = {
+    meeting: 'bg-blue-100 text-blue-700', deadline: 'bg-red-100 text-red-700',
+    call: 'bg-green-100 text-green-700', delivery: 'bg-orange-100 text-orange-700',
+    pickup: 'bg-purple-100 text-purple-700', reminder: 'bg-yellow-100 text-yellow-700',
+    other: 'bg-gray-100 text-gray-700',
+};
+
+function UpcomingEventsWidget({ events, currentUserId }) {
+    const [showAll, setShowAll] = useState(false);
+    const visible = showAll ? events : (events || []).slice(0, 4);
+    const hiddenCount = (events?.length || 0) - 4;
+
+    if (!events || events.length === 0) return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <h2 className="text-lg font-semibold text-gray-900">Kommende Termine</h2>
+                </div>
+            </div>
+            <div className="px-6 py-8 text-center text-sm text-gray-400">Keine Termine in den nächsten 14 Tagen</div>
+        </div>
+    );
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <h2 className="text-lg font-semibold text-gray-900">Kommende Termine</h2>
+                    <span className="ml-auto text-xs bg-gray-200 text-gray-600 font-semibold px-2 py-0.5 rounded-full">{events.length}</span>
+                </div>
+            </div>
+            <div className="divide-y divide-gray-50">
+                {visible.map(ev => {
+                    const d = new Date(ev.start);
+                    const isToday = d.toDateString() === new Date().toDateString();
+                    const timeLabel = ev.all_day ? 'Ganztägig' : d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    const isMine = currentUserId && ev.assignees?.some(a => a.id === currentUserId);
+
+                    return (
+                        <Link key={ev.id} href={route('calendar.show', ev.id)}
+                            className={`flex items-start gap-4 px-6 py-3.5 hover:bg-gray-50 transition-colors group ${isMine ? 'border-l-4 border-l-primary-500 bg-primary-50/30' : ''}`}>
+                            {/* Date block */}
+                            <div className={`flex-shrink-0 text-center w-12 rounded-lg py-1 ${isToday ? 'bg-primary-600 text-white' : isMine ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'}`}>
+                                <div className="text-xs font-medium">{d.toLocaleDateString('de-DE', { weekday: 'short' })}</div>
+                                <div className="text-lg font-bold leading-tight">{d.getDate()}</div>
+                            </div>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">{ev.title}</p>
+                                    {isMine && <span className="text-xs px-1.5 py-0.5 bg-primary-600 text-white rounded font-medium flex-shrink-0">Ich</span>}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span className="text-xs text-gray-500">{timeLabel}</span>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${EVENT_TYPE_COLORS[ev.event_type] || 'bg-gray-100 text-gray-700'}`}>
+                                        {EVENT_TYPE_LABELS[ev.event_type] || ev.event_type}
+                                    </span>
+                                    {ev.tags && ev.tags.slice(0, 2).map(tag => (
+                                        <span key={tag} className="text-xs px-1.5 py-0.5 bg-primary-50 text-primary-600 rounded font-medium">{tag}</span>
+                                    ))}
+                                </div>
+                                {(ev.project_name || ev.customer_name) && (
+                                    <p className="text-xs text-gray-400 mt-0.5 truncate">
+                                        {ev.project_name && <span>📁 {ev.project_name}</span>}
+                                        {ev.project_name && ev.customer_name && <span className="mx-1">·</span>}
+                                        {ev.customer_name && <span>👤 {ev.customer_name}</span>}
+                                    </p>
+                                )}
+                            </div>
+                            {/* Assignees */}
+                            {ev.assignees && ev.assignees.length > 0 && (
+                                <div className="flex-shrink-0 flex -space-x-1">
+                                    {ev.assignees.slice(0, 3).map(a => {
+                                        const isMe = a.id === currentUserId;
+                                        return (
+                                            <span key={a.id} title={isMe ? 'Ich' : a.name}
+                                                className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white ${isMe ? 'bg-primary-600 text-white' : 'bg-primary-200 text-primary-800'}`}>
+                                                {a.name?.[0]?.toUpperCase()}
+                                            </span>
+                                        );
+                                    })}
+                                    {ev.assignees.length > 3 && (
+                                        <span className="h-6 w-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold border-2 border-white">
+                                            +{ev.assignees.length - 3}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </Link>
+                    );
+                })}
+            </div>
+            {hiddenCount > 0 && (
+                <button onClick={() => setShowAll(v => !v)}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-2.5 text-sm text-gray-500 hover:text-primary-600 hover:bg-gray-50 transition-colors border-t border-gray-100">
+                    <svg className={`w-4 h-4 transition-transform ${showAll ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    {showAll ? 'Weniger anzeigen' : `${hiddenCount} weitere Termine`}
+                </button>
+            )}
+            <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+                <Link href={route('calendar.index')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                    Alle Termine anzeigen →
+                </Link>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main Dashboard ──────────────────────────────────────────────────────────
 export default function Dashboard() {
-    const { stats, recentTasks, recentLeads, activityFeed } = usePage().props;
+    const { stats, recentTasks, recentLeads, activityFeed, myAssignments, upcomingEvents, auth } = usePage().props;
+    const isAdmin = ['admin', 'owner'].includes(auth?.user?.role);
     const [isLoading, setIsLoading] = useState(!stats);
+    const [showAllActivities, setShowAllActivities] = useState(false);
 
     useEffect(() => {
         if (stats) setIsLoading(false);
@@ -238,151 +561,167 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Tasks */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-900">Aktuelle Aufgaben</h2>
-                            <Link href="/tasks" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                                Alle anzeigen
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </Link>
-                        </div>
-                    </div>
-                    <div className="p-4">
-                        {recentTasks && recentTasks.length > 0 ? (
-                            <ul className="space-y-2">
-                                {recentTasks.map((task) => {
-                                    const priorityStyle = getPriorityStyles(task.priority);
-                                    return (
-                                        <li
-                                            key={task.id}
-                                            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
-                                        >
-                                            <div className="flex items-center min-w-0">
-                                                <div className={`h-2 w-2 rounded-full ${priorityStyle.dot} mr-3 flex-shrink-0`} />
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">
-                                                        {task.title}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 truncate">
-                                                        {task.project_name || task.project || 'Kein Projekt'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                                                <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${getStatusColor(task.status)}`}>
-                                                    {(task.status || '').replace('_', ' ')}
-                                                </span>
-                                                <span className={`text-xs px-2 py-1 rounded-full ${priorityStyle.bg} ${priorityStyle.text} font-medium`}>
-                                                    {priorityStyle.label}
-                                                </span>
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-10">
-                                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                    </svg>
-                                </div>
-                                <p className="text-sm text-gray-500">Keine Aufgaben vorhanden</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Recent Leads */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-900">Neue Leads</h2>
-                            <Link href="/leads" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                                Alle anzeigen
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </Link>
-                        </div>
-                    </div>
-                    <div className="p-4">
-                        {recentLeads && recentLeads.length > 0 ? (
-                            <ul className="space-y-2">
-                                {recentLeads.map((lead) => (
-                                    <li
-                                        key={lead.id}
-                                        className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
-                                    >
-                                        <div className="flex items-center min-w-0">
-                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center mr-3 flex-shrink-0">
-                                                <span className="text-white font-medium text-sm">
-                                                    {(lead.name || lead.company || 'L').charAt(0).toUpperCase()}
-                                                </span>
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">
-                                                    {lead.name || lead.company}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {lead.value ? lead.value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : 'Kein Wert'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium border flex-shrink-0 ml-2 ${getStatusColor(lead.status)}`}>
-                                            {lead.status}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-10">
-                                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                    </svg>
-                                </div>
-                                <p className="text-sm text-gray-500">Keine Leads vorhanden</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
+            {/* Time & Weather */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <TimeWidget />
+                <WeatherWidget />
             </div>
-            {/* Activity Feed */}
-            {activityFeed && activityFeed.length > 0 && (
+
+            {/* Upcoming Events */}
+            <div className="mb-6">
+                <UpcomingEventsWidget events={upcomingEvents} currentUserId={auth?.user?.id} />
+            </div>
+
+            {/* My Assignments */}
+            {myAssignments && myAssignments.length > 0 && (
+                <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-primary-50/50">
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-lg font-semibold text-gray-900">Meine Zuweisungen</h2>
+                            <span className="ml-auto text-xs bg-primary-100 text-primary-700 font-semibold px-2 py-0.5 rounded-full">
+                                {myAssignments.length}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                        {myAssignments.map((item) => {
+                            const typeConfig = {
+                                task:    { label: 'Aufgabe',  bg: 'bg-amber-100',   text: 'text-amber-700',   dot: 'bg-amber-500' },
+                                project: { label: 'Projekt',  bg: 'bg-indigo-100',  text: 'text-indigo-700',  dot: 'bg-indigo-500' },
+                                ticket:  { label: 'Ticket',   bg: 'bg-rose-100',    text: 'text-rose-700',    dot: 'bg-rose-500' },
+                            }[item.type] || { label: item.type, bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-500' };
+
+                            const priorityDot = {
+                                urgent: 'bg-red-500',
+                                high:   'bg-orange-500',
+                                medium: 'bg-yellow-500',
+                                low:    'bg-gray-400',
+                            }[item.priority] || 'bg-gray-400';
+
+                            const statusLabel = {
+                                todo: 'Offen', in_progress: 'In Bearbeitung', review: 'Überprüfung',
+                                planning: 'Planung', active: 'Aktiv',
+                                open: 'Offen', pending: 'Wartend',
+                            }[item.status] || item.status;
+
+                            return (
+                                <Link
+                                    key={`${item.type}-${item.id}`}
+                                    href={item.url}
+                                    className="flex items-center gap-4 px-6 py-3 hover:bg-primary-50/40 transition-colors group"
+                                >
+                                    <div className={`h-2 w-2 rounded-full flex-shrink-0 ${priorityDot}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+                                            {item.title}
+                                        </p>
+                                        {item.subtitle && (
+                                            <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeConfig.bg} ${typeConfig.text}`}>
+                                            {typeConfig.label}
+                                        </span>
+                                        <span className="text-xs text-gray-500 hidden sm:block">{statusLabel}</span>
+                                        {item.due_date && (
+                                            <span className="text-xs text-gray-400 hidden md:block">
+                                                {new Date(item.due_date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                                            </span>
+                                        )}
+                                    </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Activity Feed — Admin only */}
+            {isAdmin && activityFeed && activityFeed.length > 0 && (
                 <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                        <h2 className="text-lg font-semibold text-gray-900">Letzte Aktivitaeten</h2>
+                        <div className="flex items-center gap-2">
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <h2 className="text-lg font-semibold text-gray-900">Letzte Aktivitäten</h2>
+                            <span className="ml-1 text-xs bg-gray-200 text-gray-600 font-semibold px-2 py-0.5 rounded-full">Admin</span>
+                        </div>
                     </div>
-                    <div className="p-4">
-                        <ul className="space-y-3">
-                            {activityFeed.map((entry) => {
-                                const actionStyle = getActionIcon(entry.action);
-                                return (
-                                    <li key={entry.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <div className={`flex-shrink-0 h-8 w-8 rounded-full ${actionStyle.bg} ${actionStyle.text} flex items-center justify-center font-bold text-sm`}>
-                                            {actionStyle.icon}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-gray-900">
-                                                <span className="font-medium">{entry.user?.name || 'System'}</span>
-                                                {' '}hat{' '}
-                                                <span className="font-medium">{entry.auditable_type?.split('\\').pop()}</span>
-                                                {' '}{getActionLabel(entry.action)}
+                    <div className="divide-y divide-gray-50">
+                        {(showAllActivities ? activityFeed : activityFeed.slice(0, 15)).map((entry) => {
+                            const actionConfig = {
+                                created: { label: 'erstellt',   bg: 'bg-emerald-500', ring: 'ring-emerald-100' },
+                                updated: { label: 'bearbeitet', bg: 'bg-blue-500',    ring: 'ring-blue-100' },
+                                deleted: { label: 'gelöscht',   bg: 'bg-red-500',     ring: 'ring-red-100' },
+                            }[entry.action] || { label: entry.action, bg: 'bg-gray-400', ring: 'ring-gray-100' };
+
+                            const date = new Date(entry.created_at);
+                            const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+                            return (
+                                <div key={entry.id} className="flex items-start gap-4 px-6 py-3.5 hover:bg-gray-50 transition-colors">
+                                    {/* User Avatar */}
+                                    <div className={`flex-shrink-0 h-9 w-9 rounded-full ${actionConfig.bg} ring-4 ${actionConfig.ring} flex items-center justify-center text-white font-bold text-sm`}>
+                                        {entry.user_initial}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-gray-900 leading-snug">
+                                            <span className="font-semibold text-gray-900">{entry.user_name}</span>
+                                            <span className="text-gray-500"> hat </span>
+                                            <span className="font-medium text-gray-700">{entry.model_label}</span>
+                                            {entry.model_id && (
+                                                <span className="text-gray-400"> #{entry.model_id}</span>
+                                            )}
+                                            <span className={`ml-1 inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded ${
+                                                entry.action === 'created' ? 'bg-emerald-100 text-emerald-700' :
+                                                entry.action === 'updated' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-red-100 text-red-700'
+                                            }`}>{actionConfig.label}</span>
+                                        </p>
+                                        {entry.description && (
+                                            <p className="text-xs text-gray-500 mt-0.5 truncate">{entry.description}</p>
+                                        )}
+                                        {entry.changed_fields && entry.changed_fields.length > 0 && (
+                                            <p className="text-xs text-gray-400 mt-0.5">
+                                                Geändert: {entry.changed_fields.join(', ')}
                                             </p>
-                                            <p className="text-xs text-gray-500 mt-0.5">{formatRelativeTime(entry.created_at)}</p>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                        )}
+                                    </div>
+
+                                    {/* Timestamp */}
+                                    <div className="flex-shrink-0 text-right">
+                                        <p className="text-xs font-medium text-gray-700">{timeStr} Uhr</p>
+                                        <p className="text-xs text-gray-400">{dateStr}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
+                    {activityFeed.length > 15 && (
+                        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+                            <button
+                                onClick={() => setShowAllActivities(v => !v)}
+                                className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                            >
+                                <svg className={`w-4 h-4 transition-transform duration-200 ${showAllActivities ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                                {showAllActivities
+                                    ? 'Weniger anzeigen'
+                                    : `${activityFeed.length - 15} weitere Aktivitäten anzeigen`}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </DashboardLayout>

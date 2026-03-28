@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Note;
 use App\Models\Project;
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -35,12 +36,14 @@ class NoteController extends Controller
 
         $projects = Project::orderBy('name')->get(['id', 'name']);
         $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Notes/Index', [
             'notes' => $notes,
             'pinned' => $pinned,
             'projects' => $projects,
             'customers' => $customers,
+            'users' => $users,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -52,9 +55,11 @@ class NoteController extends Controller
     {
         $projects = Project::orderBy('name')->get(['id', 'name']);
         $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Notes/Create', [
             'projects' => $projects,
             'customers' => $customers,
+            'users' => $users,
             'project_id' => $request->project_id,
             'customer_id' => $request->customer_id,
         ]);
@@ -68,14 +73,21 @@ class NoteController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
+            'category' => 'nullable|string',
             'project_id' => 'nullable',
             'customer_id' => 'nullable',
             'pinned' => 'boolean',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         $validated['created_by'] = auth()->id();
 
-        Note::create($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
+        $note = Note::create($validated);
+        $note->assignees()->sync($assignedUsers);
 
         return redirect()->route('notes.index')
             ->with('success', 'Notiz erfolgreich erstellt.');
@@ -86,7 +98,7 @@ class NoteController extends Controller
      */
     public function show(Note $note)
     {
-        $note->load(['project', 'customer', 'creator']);
+        $note->load(['project', 'customer', 'creator', 'assignees']);
 
         return Inertia::render('Notes/Show', [
             'note' => $note,
@@ -98,13 +110,16 @@ class NoteController extends Controller
      */
     public function edit(Note $note)
     {
+        $note->load('assignees');
         $projects = Project::orderBy('name')->get(['id', 'name']);
         $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Notes/Edit', [
             'note' => $note,
             'projects' => $projects,
             'customers' => $customers,
+            'users' => $users,
         ]);
     }
 
@@ -116,12 +131,19 @@ class NoteController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
+            'category' => 'nullable|string',
             'project_id' => 'nullable',
             'customer_id' => 'nullable',
             'pinned' => 'boolean',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
         $note->update($validated);
+        $note->assignees()->sync($assignedUsers);
 
         return redirect()->route('notes.index')
             ->with('success', 'Notiz erfolgreich aktualisiert.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Customer;
+use App\Models\User;
 use App\Helpers\StatusHelper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,7 +28,7 @@ class ProjectController extends Controller
             $query->where('status', $request->status);
         }
 
-        $projects = $query->orderBy('created_at', 'desc')
+        $projects = $query->with(['customer', 'assignees'])->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
@@ -48,8 +49,10 @@ class ProjectController extends Controller
     public function create(Request $request)
     {
         $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $users = User::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Projects/Create', [
             'customers' => $customers,
+            'users' => $users,
             'customer_id' => $request->customer_id,
         ]);
     }
@@ -68,13 +71,19 @@ class ProjectController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
             'customer_id' => 'nullable',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         $validated['created_by'] = auth()->id();
         $validated['status'] = $validated['status'] ?? 'planning';
         $validated['priority'] = $validated['priority'] ?? 'medium';
 
-        Project::create($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
+        $project = Project::create($validated);
+        $project->assignees()->sync($assignedUsers);
 
         return redirect()->route('projects.index')
             ->with('success', 'Projekt erfolgreich erstellt.');
@@ -85,7 +94,7 @@ class ProjectController extends Controller
      */
     public function show($id)
     {
-        $project = Project::with(['customer', 'tasks', 'timeEntries', 'creator'])->findOrFail($id);
+        $project = Project::with(['customer', 'tasks', 'timeEntries', 'creator', 'assignees'])->findOrFail($id);
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'statuses' => StatusHelper::projectStatuses(),
@@ -98,11 +107,13 @@ class ProjectController extends Controller
      */
     public function edit($id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::with('assignees')->findOrFail($id);
         $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $users = User::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Projects/Edit', [
             'project' => $project,
             'customers' => $customers,
+            'users' => $users,
         ]);
     }
 
@@ -116,14 +127,21 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'status' => 'nullable|in:planning,active,completed,on_hold,cancelled',
             'priority' => 'nullable|in:low,medium,high,urgent',
+            'progress' => 'nullable|integer|min:0|max:100',
             'budget' => 'nullable|numeric|min:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
             'customer_id' => 'nullable',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
+
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
 
         $project = Project::findOrFail($id);
         $project->update($validated);
+        $project->assignees()->sync($assignedUsers);
 
         return redirect()->route('projects.index')
             ->with('success', 'Projekt erfolgreich aktualisiert.');

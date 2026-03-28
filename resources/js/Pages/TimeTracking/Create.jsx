@@ -2,11 +2,12 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
 
 export default function Create() {
-    const { projects, tasks } = usePage().props;
+    const { projects, tasks, users } = usePage().props;
 
     const { data, setData, post, processing, errors } = useForm({
         project_id: '',
         task_id: '',
+        user_id: '',
         description: '',
         start_time: '',
         end_time: '',
@@ -91,6 +92,20 @@ export default function Create() {
                                 ))}
                             </select>
                             {errors.task_id && <p className="text-red-500 text-sm mt-1">{errors.task_id}</p>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mitarbeiter</label>
+                            <select
+                                value={data.user_id}
+                                onChange={(e) => setData('user_id', e.target.value)}
+                                className={`w-full border ${errors.user_id ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500`}
+                            >
+                                <option value="">Eigene Zeit</option>
+                                {(users || []).map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>

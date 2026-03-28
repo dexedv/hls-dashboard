@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import Pagination from '@/Components/Pagination';
 
 export default function ProjectsIndex({ projects, customers, filters, statuses = [], priorities = [] }) {
+    const { auth } = usePage().props;
     const { data, setData, post, processing } = useForm({
         name: '',
         description: '',
@@ -88,20 +89,47 @@ export default function ProjectsIndex({ projects, customers, filters, statuses =
                         {/* Desktop Grid */}
                         <div className="hidden md:block p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {projects.data.map((project) => (
+                                {projects.data.map((project) => {
+                                    const isAssignedToMe = project.assignees?.some(a => a.id === auth?.user?.id);
+                                    return (
                                     <Link
                                         key={project.id}
                                         href={route('projects.show', project.id)}
-                                        className="border border-gray-100 dark:border-gray-700 rounded-xl p-4 hover:shadow-lg hover:border-primary-200 hover:bg-primary-50/30 dark:hover:bg-gray-700 transition-all duration-200"
+                                        className={`rounded-xl p-4 transition-all duration-200 hover:shadow-lg ${
+                                            isAssignedToMe
+                                                ? 'border-2 border-primary-400 bg-primary-50/50 hover:bg-primary-50'
+                                                : 'border border-gray-100 dark:border-gray-700 hover:border-primary-200 hover:bg-primary-50/30 dark:hover:bg-gray-700'
+                                        }`}
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{project.name}</h3>
-                                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusInfo(project.status).color}`}>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 truncate">{project.name}</h3>
+                                                {isAssignedToMe && (
+                                                    <span className="text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded font-medium flex-shrink-0">Ich</span>
+                                                )}
+                                            </div>
+                                            <span className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ml-2 ${getStatusInfo(project.status).color}`}>
                                                 {getStatusInfo(project.status).label}
                                             </span>
                                         </div>
                                         {project.customer && (
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{project.customer.name}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{project.customer.name}</p>
+                                        )}
+                                        {project.assignees && project.assignees.length > 0 && (
+                                            <div className="flex items-center gap-1 mb-2">
+                                                {project.assignees.slice(0, 4).map(a => (
+                                                    <span key={a.id} title={a.name} className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white -ml-1 first:ml-0 ${
+                                                        a.id === auth?.user?.id
+                                                            ? 'bg-primary-600 text-white ring-2 ring-primary-400'
+                                                            : 'bg-gray-200 text-gray-600'
+                                                    }`}>
+                                                        {a.name?.[0]?.toUpperCase()}
+                                                    </span>
+                                                ))}
+                                                {project.assignees.length > 4 && (
+                                                    <span className="text-xs text-gray-500 ml-1">+{project.assignees.length - 4}</span>
+                                                )}
+                                            </div>
                                         )}
                                         {project.description && (
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{project.description}</p>
@@ -121,7 +149,8 @@ export default function ProjectsIndex({ projects, customers, filters, statuses =
                                             ></div>
                                         </div>
                                     </Link>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -133,6 +162,14 @@ export default function ProjectsIndex({ projects, customers, filters, statuses =
                                         <div>
                                             <h3 className="font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600">{project.name}</h3>
                                             {project.customer && <p className="text-sm text-gray-500 dark:text-gray-400">{project.customer.name}</p>}
+                                            {project.assignees && project.assignees.length > 0 && (
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                                                    <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
+                                                    {project.assignees.map(a => a.name).join(', ')}
+                                                </p>
+                                            )}
                                         </div>
                                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusInfo(project.status).color}`}>
                                             {getStatusInfo(project.status).label}

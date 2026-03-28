@@ -18,7 +18,7 @@ class TicketController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Ticket::query()->with(['customer', 'project', 'assignee']);
+        $query = Ticket::query()->with(['customer', 'project', 'assignees']);
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
@@ -61,7 +61,7 @@ class TicketController extends Controller
     {
         $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
         $projects = Project::orderBy('name')->get(['id', 'name']);
-        $users = User::all();
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Tickets/Create', [
             'customers' => $customers,
@@ -82,19 +82,24 @@ class TicketController extends Controller
             'description' => 'nullable|string',
             'customer_id' => 'nullable',
             'project_id' => 'nullable',
-            'assigned_to' => 'nullable',
             'priority' => 'nullable|in:low,medium,high,urgent',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         $validated['created_by'] = auth()->id();
         $validated['status'] = 'open';
         $validated['priority'] = $validated['priority'] ?? 'medium';
 
-        $ticket = Ticket::create($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
 
-        if (!empty($validated['assigned_to'])) {
+        $ticket = Ticket::create($validated);
+        $ticket->assignees()->sync($assignedUsers);
+
+        foreach ($assignedUsers as $userId) {
             NotificationService::notifyUser(
-                $validated['assigned_to'],
+                $userId,
                 'Neues Ticket zugewiesen',
                 'Ihnen wurde das Ticket "' . $ticket->title . '" zugewiesen.',
                 'info',
@@ -111,7 +116,7 @@ class TicketController extends Controller
      */
     public function show(Ticket $ticket)
     {
-        $ticket->load(['customer', 'project', 'assignee', 'creator', 'comments.user']);
+        $ticket->load(['customer', 'project', 'assignees', 'creator', 'comments.user']);
 
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
@@ -123,9 +128,10 @@ class TicketController extends Controller
      */
     public function edit(Ticket $ticket)
     {
+        $ticket->load('assignees');
         $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
         $projects = Project::orderBy('name')->get(['id', 'name']);
-        $users = User::all();
+        $users = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Tickets/Edit', [
             'ticket' => $ticket,
@@ -145,14 +151,19 @@ class TicketController extends Controller
             'description' => 'nullable|string',
             'customer_id' => 'nullable',
             'project_id' => 'nullable',
-            'assigned_to' => 'nullable',
             'status' => 'nullable|in:open,in_progress,pending,resolved,closed',
             'priority' => 'nullable|in:low,medium,high,urgent',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
-        $ticket->update($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
 
-        return redirect()->route('tickets.index')
+        $ticket->update($validated);
+        $ticket->assignees()->sync($assignedUsers);
+
+        return redirect()->route('tickets.show', $ticket->id)
             ->with('success', 'Ticket erfolgreich aktualisiert.');
     }
 

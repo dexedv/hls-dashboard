@@ -134,6 +134,7 @@ Route::middleware(['auth', 'verified', 'installed', 'license'])->group(function 
     Route::put('quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update')->middleware('permission:quotes.edit');
     Route::delete('quotes/{quote}', [QuoteController::class, 'destroy'])->name('quotes.destroy')->middleware('permission:quotes.delete');
     Route::get('quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf')->middleware(['permission:quotes.view', 'throttle:exports']);
+    Route::post('quotes/{quote}/send-email', [QuoteController::class, 'sendEmail'])->name('quotes.sendEmail')->middleware('permission:quotes.edit');
 
     // Time Tracking
     Route::get('time-tracking', [TimeEntryController::class, 'index'])->name('time-tracking.index')->middleware('permission:time_tracking.view');

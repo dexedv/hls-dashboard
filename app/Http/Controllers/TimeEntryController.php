@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TimeEntry;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -48,10 +49,12 @@ class TimeEntryController extends Controller
     public function create(Request $request)
     {
         $projects = Project::orderBy('name')->get(['id', 'name']);
-        $tasks = Task::all();
+        $tasks = Task::orderBy('title')->get(['id', 'title']);
+        $users = User::orderBy('name')->get(['id', 'name']);
         return Inertia::render('TimeTracking/Create', [
             'projects' => $projects,
             'tasks' => $tasks,
+            'users' => $users,
             'project_id' => $request->project_id,
             'task_id' => $request->task_id,
         ]);
@@ -71,6 +74,7 @@ class TimeEntryController extends Controller
             'project_id' => 'nullable',
             'task_id' => 'nullable',
             'billable' => 'boolean',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
         // Combine date + time fields if sent separately
@@ -82,7 +86,7 @@ class TimeEntryController extends Controller
         }
         unset($validated['date']);
 
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = $validated['user_id'] ?? auth()->id();
 
         // Calculate duration if end_time is provided
         if ($validated['end_time'] && !$validated['duration']) {

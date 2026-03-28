@@ -8,7 +8,9 @@ use App\Models\Project;
 use App\Models\Setting;
 use App\Helpers\StatusHelper;
 use App\Services\PdfService;
+use App\Mail\QuoteMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class QuoteController extends Controller
@@ -143,12 +145,57 @@ class QuoteController extends Controller
             'status' => 'nullable|in:draft,sent,accepted,declined,expired',
             'valid_until' => 'nullable|date',
             'notes' => 'nullable|string',
+            'items' => 'nullable|array',
+            'items.*.description' => 'required|string',
+            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
         ]);
+
+        $items = $validated['items'] ?? null;
+        unset($validated['items']);
+
+        if ($items !== null) {
+            $subtotal = 0;
+            foreach ($items as &$item) {
+                $item['total'] = $item['quantity'] * $item['unit_price'];
+                $subtotal += $item['total'];
+            }
+            unset($item);
+
+            $taxRate = Setting::get('tax_rate', 19);
+            $validated['subtotal'] = $subtotal;
+            $validated['tax'] = $subtotal * ($taxRate / 100);
+            $validated['total'] = $subtotal + $validated['tax'];
+
+            $quote->items()->delete();
+            foreach ($items as $item) {
+                $quote->items()->create($item);
+            }
+        }
 
         $quote->update($validated);
 
-        return redirect()->route('quotes.index')
+        return redirect()->route('quotes.show', $quote->id)
             ->with('success', 'Angebot erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Send quote via email and mark as sent.
+     */
+    public function sendEmail(Quote $quote)
+    {
+        $quote->load('customer');
+
+        $email = $quote->customer?->email;
+        if (!$email) {
+            return redirect()->back()->with('error', 'Kunde hat keine E-Mail-Adresse.');
+        }
+
+        Mail::to($email)->send(new QuoteMail($quote));
+
+        $quote->update(['status' => 'sent']);
+
+        return redirect()->back()->with('success', 'Angebot wurde per E-Mail gesendet und als "Gesendet" markiert.');
     }
 
     /**

@@ -1,12 +1,17 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import PageHeader, { Button } from '@/Components/PageHeader';
+import { useState } from 'react';
 
 export default function InvoiceShow({ invoice }) {
-    const { post: sendEmail, processing: emailProcessing } = useForm();
+    const [sending, setSending] = useState(false);
 
     const handleSendEmail = () => {
-        sendEmail(route('invoices.sendEmail', invoice.id));
+        if (!confirm(`Rechnung ${invoice.number} per E-Mail senden und Status auf "Gesendet" setzen?`)) return;
+        setSending(true);
+        router.post(route('invoices.sendEmail', invoice.id), {}, {
+            onFinish: () => setSending(false),
+        });
     };
 
     return (
@@ -26,17 +31,21 @@ export default function InvoiceShow({ invoice }) {
                                 PDF
                             </Button>
                         </a>
-                        <Button variant="secondary" onClick={handleSendEmail} disabled={emailProcessing}>
+                        <button
+                            onClick={handleSendEmail}
+                            disabled={sending}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                            Per E-Mail senden
-                        </Button>
+                            {sending ? 'Senden...' : 'Per E-Mail senden'}
+                        </button>
                         <Link href={route('invoices.edit', invoice.id)}>
                             <Button variant="secondary">Bearbeiten</Button>
                         </Link>
                         <Link href={route('invoices.index')}>
-                            <Button variant="secondary">Zurueck</Button>
+                            <Button variant="secondary">Zurück</Button>
                         </Link>
                     </div>
                 }

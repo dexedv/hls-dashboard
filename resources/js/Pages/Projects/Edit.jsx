@@ -1,7 +1,8 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import MultiUserSelect from '@/Components/MultiUserSelect';
 
-export default function ProjectEdit({ project, customers }) {
+export default function ProjectEdit({ project, customers, users }) {
     const { data, setData, put, processing, errors } = useForm({
         name: project.name || '',
         description: project.description || '',
@@ -11,6 +12,7 @@ export default function ProjectEdit({ project, customers }) {
         start_date: project.start_date || '',
         end_date: project.end_date || '',
         customer_id: project.customer_id || '',
+        assigned_users: project.assignees?.map(a => a.id) || [],
     });
 
     const handleSubmit = (e) => {
@@ -114,6 +116,17 @@ export default function ProjectEdit({ project, customers }) {
                                     {errors.customer_id && <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>}
                                 </div>
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Mitarbeiter (Zugewiesen an)</label>
+                                <MultiUserSelect
+                                    users={users || []}
+                                    selected={data.assigned_users}
+                                    onChange={(val) => setData('assigned_users', val)}
+                                    error={errors.assigned_users}
+                                />
+                                {errors.assigned_users && <p className="text-red-500 text-sm mt-1">{errors.assigned_users}</p>}
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Startdatum</label>

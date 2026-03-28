@@ -2,117 +2,134 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Event;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class EventController extends Controller
 {
-    /**
-     * Display a listing of events.
-     */
     public function index(Request $request)
     {
-        $query = Event::query()->with('project');
+        $query = Event::query()->with(['project', 'customer', 'assignees']);
 
         if ($request->month && $request->year) {
             $query->whereMonth('start', $request->month)
                   ->whereYear('start', $request->year);
         }
 
-        $events = $query->orderBy('start', 'asc')->get();
-        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $events    = $query->orderBy('start', 'asc')->get();
+        $projects  = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $users     = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Calendar/Index', [
-            'events' => $events,
-            'projects' => $projects,
+            'events'    => $events,
+            'projects'  => $projects,
+            'customers' => $customers,
+            'users'     => $users,
         ]);
     }
 
-    /**
-     * Show the form for creating a new event.
-     */
     public function create()
     {
-        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $projects  = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $users     = User::orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('Calendar/Create', [
-            'projects' => $projects,
+            'projects'  => $projects,
+            'customers' => $customers,
+            'users'     => $users,
         ]);
     }
 
-    /**
-     * Store a newly created event.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start' => 'required|date',
-            'end' => 'nullable|date|after:start',
-            'all_day' => 'boolean',
-            'project_id' => 'nullable',
+            'title'            => 'required|string|max:255',
+            'description'      => 'nullable|string',
+            'event_type'       => 'nullable|string|max:50',
+            'start'            => 'required|date',
+            'end'              => 'nullable|date',
+            'all_day'          => 'boolean',
+            'project_id'       => 'nullable|exists:projects,id',
+            'customer_id'      => 'nullable|exists:customers,id',
+            'tags'             => 'nullable|array',
+            'tags.*'           => 'string|max:50',
+            'assigned_users'   => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         $validated['created_by'] = auth()->id();
-        $validated['user_id'] = auth()->id();
 
-        Event::create($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
+        $event = Event::create($validated);
+        $event->assignees()->sync($assignedUsers);
 
         return redirect()->route('calendar.index')
             ->with('success', 'Termin erfolgreich erstellt.');
     }
 
-    /**
-     * Display the specified event.
-     */
-    public function show(Event $event)
+    public function show(Event $calendar)
     {
-        $event->load('project');
+        $calendar->load(['project', 'customer', 'assignees']);
+
         return Inertia::render('Calendar/Show', [
-            'event' => $event,
+            'event' => $calendar,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified event.
-     */
-    public function edit(Event $event)
+    public function edit(Event $calendar)
     {
-        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $calendar->load('assignees');
+
+        $projects  = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $users     = User::orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('Calendar/Edit', [
-            'event' => $event,
-            'projects' => $projects,
+            'event'     => $calendar,
+            'projects'  => $projects,
+            'customers' => $customers,
+            'users'     => $users,
         ]);
     }
 
-    /**
-     * Update the specified event.
-     */
-    public function update(Request $request, Event $event)
+    public function update(Request $request, Event $calendar)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start' => 'required|date',
-            'end' => 'nullable|date|after:start',
-            'all_day' => 'boolean',
-            'project_id' => 'nullable',
+            'title'            => 'required|string|max:255',
+            'description'      => 'nullable|string',
+            'event_type'       => 'nullable|string|max:50',
+            'start'            => 'required|date',
+            'end'              => 'nullable|date',
+            'all_day'          => 'boolean',
+            'project_id'       => 'nullable|exists:projects,id',
+            'customer_id'      => 'nullable|exists:customers,id',
+            'tags'             => 'nullable|array',
+            'tags.*'           => 'string|max:50',
+            'assigned_users'   => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
-        $event->update($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
+        $calendar->update($validated);
+        $calendar->assignees()->sync($assignedUsers);
 
         return redirect()->route('calendar.index')
             ->with('success', 'Termin erfolgreich aktualisiert.');
     }
 
-    /**
-     * Remove the specified event.
-     */
-    public function destroy(Event $event)
+    public function destroy(Event $calendar)
     {
-        $event->delete();
+        $calendar->delete();
 
         return redirect()->route('calendar.index')
             ->with('success', 'Termin erfolgreich gelöscht.');

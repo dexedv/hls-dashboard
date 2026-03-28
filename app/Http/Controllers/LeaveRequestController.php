@@ -42,7 +42,10 @@ class LeaveRequestController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Vacation/Create');
+        $users = User::orderBy('name')->get(['id', 'name']);
+        return Inertia::render('Vacation/Create', [
+            'users' => $users,
+        ]);
     }
 
     /**
@@ -55,9 +58,10 @@ class LeaveRequestController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'notes' => 'nullable|string',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = $validated['user_id'] ?? auth()->id();
 
         // Calculate days
         $start = \Carbon\Carbon::parse($validated['start_date']);

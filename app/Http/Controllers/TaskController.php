@@ -16,7 +16,7 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Task::query()->with(['project', 'assignee']);
+        $query = Task::query()->with(['project', 'assignees']);
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
@@ -38,7 +38,6 @@ class TaskController extends Controller
             ->withQueryString();
 
         $projects = Project::orderBy('name')->get(['id', 'name']);
-
         $users = User::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Tasks/Index', [
@@ -57,7 +56,7 @@ class TaskController extends Controller
     public function create(Request $request)
     {
         $projects = Project::orderBy('name')->get(['id', 'name']);
-        $users = User::all();
+        $users = User::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Tasks/Create', [
             'projects' => $projects,
             'users' => $users,
@@ -77,14 +76,19 @@ class TaskController extends Controller
             'priority' => 'nullable|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
             'project_id' => 'nullable',
-            'assigned_to' => 'nullable',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         $validated['created_by'] = auth()->id();
         $validated['status'] = $validated['status'] ?? 'todo';
         $validated['priority'] = $validated['priority'] ?? 'medium';
 
-        Task::create($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
+        $task = Task::create($validated);
+        $task->assignees()->sync($assignedUsers);
 
         return redirect()->route('tasks.index')
             ->with('success', 'Aufgabe erfolgreich erstellt.');
@@ -95,7 +99,7 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        $task->load(['project', 'assignee', 'creator', 'timeEntries']);
+        $task->load(['project', 'assignees', 'creator', 'timeEntries']);
 
         return Inertia::render('Tasks/Show', [
             'task' => $task,
@@ -107,8 +111,9 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
+        $task->load('assignees');
         $projects = Project::orderBy('name')->get(['id', 'name']);
-        $users = User::all();
+        $users = User::orderBy('name')->get(['id', 'name']);
         return Inertia::render('Tasks/Edit', [
             'task' => $task,
             'projects' => $projects,
@@ -128,12 +133,17 @@ class TaskController extends Controller
             'priority' => 'nullable|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
             'project_id' => 'nullable',
-            'assigned_to' => 'nullable',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
-        $task->update($validated);
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
 
-        return redirect()->route('tasks.index')
+        $task->update($validated);
+        $task->assignees()->sync($assignedUsers);
+
+        return redirect()->route('tasks.show', $task->id)
             ->with('success', 'Aufgabe erfolgreich aktualisiert.');
     }
 

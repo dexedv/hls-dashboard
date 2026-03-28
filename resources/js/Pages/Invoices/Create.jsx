@@ -32,7 +32,7 @@ export default function Create() {
     };
 
     const calculateTotal = () => {
-        return items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+        return items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0), 0);
     };
 
     const handleSubmit = (e) => {
@@ -93,7 +93,7 @@ export default function Create() {
                                     <input
                                         type="number"
                                         value={item.quantity}
-                                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value))}
+                                        onChange={(e) => updateItem(index, 'quantity', e.target.value)}
                                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                     />
                                 </div>
@@ -103,12 +103,12 @@ export default function Create() {
                                         type="number"
                                         step="0.01"
                                         value={item.unit_price}
-                                        onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value))}
+                                        onChange={(e) => updateItem(index, 'unit_price', e.target.value)}
                                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                     />
                                 </div>
                                 <div className="col-span-2 flex items-center gap-2">
-                                    <span className="text-sm font-medium">{(item.quantity * item.unit_price).toFixed(2)} €</span>
+                                    <span className="text-sm font-medium">{((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toFixed(2)} €</span>
                                     {items.length > 1 && (
                                         <button
                                             type="button"

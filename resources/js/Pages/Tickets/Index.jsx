@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
@@ -8,6 +8,7 @@ import StatusBadge from '@/Components/StatusBadge';
 import Pagination from '@/Components/Pagination';
 
 export default function TicketsIndex({ tickets, customers, projects, users, filters, statuses = [], priorities = [] }) {
+    const { auth } = usePage().props;
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
@@ -109,14 +110,23 @@ export default function TicketsIndex({ tickets, customers, projects, users, filt
                     />
                 ) : (
                     <div className="divide-y divide-gray-100">
-                        {tickets.data.map((ticket) => (
-                            <div key={ticket.id} className="p-4 hover:bg-gray-50 transition-colors duration-150 rounded-xl mx-1 my-1">
+                        {tickets.data.map((ticket) => {
+                            const isAssignedToMe = ticket.assignees?.some(a => a.id === auth?.user?.id);
+                            return (
+                            <div key={ticket.id} className={`p-4 transition-colors duration-150 rounded-xl mx-1 my-1 ${
+                                isAssignedToMe
+                                    ? 'bg-primary-50 border border-primary-200 hover:bg-primary-100'
+                                    : 'hover:bg-gray-50'
+                            }`}>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <Link href={route('tickets.show', ticket.id)} className="font-medium text-gray-900 hover:text-primary-600 transition-colors">
                                                 #{ticket.id} {ticket.title}
                                             </Link>
+                                            {isAssignedToMe && (
+                                                <span className="text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded font-medium">Ich</span>
+                                            )}
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${priorityColors[ticket.priority] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                                                 {priorityLabels[ticket.priority] || ticket.priority}
                                             </span>
@@ -125,14 +135,28 @@ export default function TicketsIndex({ tickets, customers, projects, users, filt
                                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                                             {ticket.customer && <span>{ticket.customer.name}</span>}
                                             {ticket.project && <span>{ticket.project.name}</span>}
-                                            {ticket.assignee && <span>→ {ticket.assignee.name}</span>}
+                                            {ticket.assignees && ticket.assignees.length > 0 && (
+                                                <span className="flex items-center gap-0.5">
+                                                    {ticket.assignees.slice(0, 3).map(a => (
+                                                        <span key={a.id} title={a.name} className={`h-5 w-5 rounded-full flex items-center justify-center text-xs font-semibold border border-white ${
+                                                            a.id === auth?.user?.id
+                                                                ? 'bg-primary-600 text-white'
+                                                                : 'bg-gray-200 text-gray-600'
+                                                        }`}>
+                                                            {a.name?.[0]?.toUpperCase()}
+                                                        </span>
+                                                    ))}
+                                                    {ticket.assignees.length > 3 && <span className="ml-0.5">+{ticket.assignees.length - 3}</span>}
+                                                </span>
+                                            )}
                                             <span>{new Date(ticket.created_at).toLocaleDateString('de-DE')}</span>
                                         </div>
                                     </div>
                                     <StatusBadge status={ticket.status} statuses={statuses} />
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

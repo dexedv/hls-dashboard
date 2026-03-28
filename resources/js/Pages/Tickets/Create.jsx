@@ -1,8 +1,9 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
+import MultiUserSelect from '@/Components/MultiUserSelect';
 
 export default function Create() {
-    const { customers, projects } = usePage().props;
+    const { customers, projects, users } = usePage().props;
 
     const { data, setData, post, processing, errors } = useForm({
         title: '',
@@ -11,6 +12,7 @@ export default function Create() {
         priority: 'medium',
         customer_id: '',
         project_id: '',
+        assigned_users: [],
     });
 
     const handleSubmit = (e) => {
@@ -122,6 +124,17 @@ export default function Create() {
                                 ))}
                             </select>
                             {errors.project_id && <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>}
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mitarbeiter (Zugewiesen an)</label>
+                            <MultiUserSelect
+                                users={users || []}
+                                selected={data.assigned_users}
+                                onChange={(val) => setData('assigned_users', val)}
+                                error={errors.assigned_users}
+                            />
+                            {errors.assigned_users && <p className="text-red-500 text-sm mt-1">{errors.assigned_users}</p>}
                         </div>
 
                         <div className="md:col-span-2">

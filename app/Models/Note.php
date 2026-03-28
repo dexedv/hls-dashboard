@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Note extends Model
 {
@@ -17,6 +18,8 @@ class Note extends Model
         'customer_id',
         'pinned',
         'created_by',
+        'assigned_to',
+        'category',
     ];
 
     protected $casts = [
@@ -45,5 +48,10 @@ class Note extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function assignees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'note_user');
     }
 }
