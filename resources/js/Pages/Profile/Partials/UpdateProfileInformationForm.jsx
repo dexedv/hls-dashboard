@@ -4,42 +4,79 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 
-export default function UpdateProfileInformation({
-    mustVerifyEmail,
-    status,
-    className = '',
-}) {
+export default function UpdateProfileInformation({ mustVerifyEmail, status, className = '' }) {
     const user = usePage().props.auth.user;
+    const fileInputRef = useRef(null);
+    const [preview, setPreview] = useState(user.avatar ? `/storage/${user.avatar}` : null);
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } =
-        useForm({
-            name: user.name,
-            email: user.email,
-        });
+    const { data, setData, post, errors, processing, recentlySuccessful } = useForm({
+        _method: 'PATCH',
+        name: user.name,
+        email: user.email,
+        avatar: null,
+    });
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setData('avatar', file);
+        setPreview(URL.createObjectURL(file));
+    };
 
     const submit = (e) => {
         e.preventDefault();
-
-        patch(route('profile.update'));
+        post(route('profile.update'));
     };
+
+    const initials = user.name
+        ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        : '?';
 
     return (
         <section className={className}>
             <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Profile Information
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600">
-                    Update your account's profile information and email address.
-                </p>
+                <h2 className="text-lg font-medium text-gray-900">Profil-Informationen</h2>
+                <p className="mt-1 text-sm text-gray-600">Name, E-Mail und Profilbild aktualisieren.</p>
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
+                {/* Avatar */}
+                <div className="flex items-center gap-5">
+                    <div
+                        className="h-20 w-20 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center cursor-pointer ring-2 ring-offset-2 ring-primary-300 hover:ring-primary-500 transition-all flex-shrink-0"
+                        onClick={() => fileInputRef.current?.click()}
+                        title="Profilbild ändern"
+                    >
+                        {preview ? (
+                            <img src={preview} alt="Profilbild" className="h-full w-full object-cover" />
+                        ) : (
+                            <span className="text-2xl font-bold text-primary-600">{initials}</span>
+                        )}
+                    </div>
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                        >
+                            Bild ändern
+                        </button>
+                        <p className="text-xs text-gray-400 mt-0.5">JPG, PNG oder GIF · max. 2 MB</p>
+                        {errors.avatar && <InputError className="mt-1" message={errors.avatar} />}
+                    </div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                    />
+                </div>
+
                 <div>
                     <InputLabel htmlFor="name" value="Name" />
-
                     <TextInput
                         id="name"
                         className="mt-1 block w-full"
@@ -49,13 +86,11 @@ export default function UpdateProfileInformation({
                         isFocused
                         autoComplete="name"
                     />
-
                     <InputError className="mt-2" message={errors.name} />
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
+                    <InputLabel htmlFor="email" value="E-Mail" />
                     <TextInput
                         id="email"
                         type="email"
@@ -65,36 +100,32 @@ export default function UpdateProfileInformation({
                         required
                         autoComplete="username"
                     />
-
                     <InputError className="mt-2" message={errors.email} />
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
                         <p className="mt-2 text-sm text-gray-800">
-                            Your email address is unverified.
+                            Deine E-Mail-Adresse ist nicht verifiziert.{' '}
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900"
                             >
-                                Click here to re-send the verification email.
+                                Verifizierungslink erneut senden.
                             </Link>
                         </p>
-
                         {status === 'verification-link-sent' && (
                             <div className="mt-2 text-sm font-medium text-green-600">
-                                A new verification link has been sent to your
-                                email address.
+                                Ein neuer Verifizierungslink wurde gesendet.
                             </div>
                         )}
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
-
+                    <PrimaryButton disabled={processing}>Speichern</PrimaryButton>
                     <Transition
                         show={recentlySuccessful}
                         enter="transition ease-in-out"
@@ -102,9 +133,7 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
-                            Saved.
-                        </p>
+                        <p className="text-sm text-gray-600">Gespeichert.</p>
                     </Transition>
                 </div>
             </form>
