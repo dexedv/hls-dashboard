@@ -1,0 +1,239 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Note;
+use App\Models\Project;
+use App\Models\Customer;
+use App\Models\User;
+use App\Services\NotificationService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class NoteController extends Controller
+{
+    /**
+     * Display a listing of notes.
+     */
+    public function index(Request $request)
+    {
+        $showArchived = $request->boolean('show_archived');
+        $query = Note::query();
+
+        if ($showArchived) {
+            $query->whereNotNull('archived_at');
+        } else {
+            $query->whereNull('archived_at');
+        }
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'ilike', "%{$request->search}%")
+                    ->orWhere('content', 'ilike', "%{$request->search}%");
+            });
+        }
+
+        $sort = $request->sort ?? 'created_desc';
+        match ($sort) {
+            'title'       => $query->orderBy('title', 'asc'),
+            'created_asc' => $query->orderBy('created_at', 'asc'),
+            default       => $query->orderBy('created_at', 'desc'),
+        };
+
+        // Get pinned notes (only when not in archive view)
+        $pinned = $showArchived
+            ? collect()
+            : Note::where('pinned', true)->whereNull('archived_at')->orderBy('created_at', 'desc')->get();
+
+        $notes = $query->paginate(10)->withQueryString();
+
+        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('Notes/Index', [
+            'notes' => $notes,
+            'pinned' => $pinned,
+            'projects' => $projects,
+            'customers' => $customers,
+            'users' => $users,
+            'filters' => (object) $request->only(['search', 'sort', 'show_archived']),
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new note.
+     */
+    public function create(Request $request)
+    {
+        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name']);
+        return Inertia::render('Notes/Create', [
+            'projects' => $projects,
+            'customers' => $customers,
+            'users' => $users,
+            'project_id' => $request->project_id,
+            'customer_id' => $request->customer_id,
+        ]);
+    }
+
+    /**
+     * Store a newly created note.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string',
+            'category' => 'nullable|string',
+            'project_id' => 'nullable',
+            'customer_id' => 'nullable',
+            'pinned' => 'boolean',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
+        ]);
+
+        $validated['created_by'] = auth()->id();
+
+        $assignedUsers = $validated['assigned_users'] ?? [];
+        unset($validated['assigned_users']);
+
+        $note = Note::create($validated);
+        $note->assignees()->sync($assignedUsers);
+
+        NotificationService::notifyAssigned(
+            array_map('intval', $assignedUsers),
+            'Neue Notiz: ' . $note->title,
+            'Du wurdest in einer Notiz markiert.',
+            route('notes.show', $note->id),
+            auth()->id()
+        );
+
+        return redirect()->route('notes.index')
+            ->with('success', 'Notiz erfolgreich erstellt.');
+    }
+
+    /**
+     * Display the specified note.
+     */
+    public function show(Note $note)
+    {
+        $note->load(['project', 'customer', 'creator', 'assignees']);
+
+        return Inertia::render('Notes/Show', [
+            'note' => $note,
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified note.
+     */
+    public function edit(Note $note)
+    {
+        $note->load('assignees');
+        $projects = Project::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('Notes/Edit', [
+            'note' => $note,
+            'projects' => $projects,
+            'customers' => $customers,
+            'users' => $users,
+        ]);
+    }
+
+    /**
+     * Update the specified note.
+     */
+    public function update(Request $request, Note $note)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string',
+            'category' => 'nullable|string',
+            'project_id' => 'nullable',
+            'customer_id' => 'nullable',
+            'pinned' => 'boolean',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
+        ]);
+
+        $assignedUsers   = array_map('intval', $validated['assigned_users'] ?? []);
+        $existingUserIds = $note->assignees->pluck('id')->map(fn($id) => (int)$id)->toArray();
+        unset($validated['assigned_users']);
+
+        $note->update($validated);
+        $note->assignees()->sync($assignedUsers);
+
+        NotificationService::notifyNewlyAssigned(
+            $assignedUsers, $existingUserIds,
+            'Notiz: ' . $note->title,
+            'Du wurdest in einer Notiz markiert.',
+            route('notes.show', $note->id),
+            auth()->id()
+        );
+
+        return redirect()->route('notes.index')
+            ->with('success', 'Notiz erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Toggle pinned status.
+     */
+    public function togglePin(Note $note)
+    {
+        $note->update([
+            'pinned' => !$note->pinned,
+        ]);
+
+        return redirect()->back();
+    }
+
+    /**
+     * Archive the specified note.
+     */
+    public function archive(Note $note)
+    {
+        $note->update(['archived_at' => now()]);
+
+        return redirect()->back()->with('success', 'Notiz archiviert.');
+    }
+
+    /**
+     * Restore an archived note.
+     */
+    public function restore(Note $note)
+    {
+        $note->update(['archived_at' => null]);
+
+        return redirect()->back()->with('success', 'Notiz wiederhergestellt.');
+    }
+
+    /**
+     * Bulk archive notes.
+     */
+    public function bulkArchive(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:notes,id',
+        ]);
+
+        Note::whereIn('id', $request->ids)->update(['archived_at' => now()]);
+
+        return redirect()->back()->with('success', count($request->ids) . ' Notizen archiviert.');
+    }
+
+    /**
+     * Remove the specified note.
+     */
+    public function destroy(Note $note)
+    {
+        $note->delete();
+
+        return redirect()->route('notes.index')
+            ->with('success', 'Notiz erfolgreich gelöscht.');
+    }
+}

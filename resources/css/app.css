@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media print {
+    .no-print { display: none !important; }
+}
+
+/* Dark Mode global overrides */
+.dark {
+    color-scheme: dark;
+}
+
+.dark body,
+.dark #app {
+    background-color: #111827;
+    color: #f9fafb;
+}
+
+/* Cards / Panels */
+.dark .bg-white {
+    background-color: #1f2937 !important;
+}
+.dark .bg-gray-50 {
+    background-color: #111827 !important;
+}
+.dark .bg-gray-100 {
+    background-color: #374151 !important;
+}
+
+/* Borders */
+.dark .border-gray-100 {
+    border-color: #374151 !important;
+}
+.dark .border-gray-200 {
+    border-color: #4b5563 !important;
+}
+.dark .border-gray-300 {
+    border-color: #6b7280 !important;
+}
+
+/* Text */
+.dark .text-gray-900,
+.dark .text-gray-800 {
+    color: #f9fafb !important;
+}
+.dark .text-gray-700 {
+    color: #e5e7eb !important;
+}
+.dark .text-gray-600 {
+    color: #d1d5db !important;
+}
+.dark .text-gray-500 {
+    color: #9ca3af !important;
+}
+.dark .text-gray-400 {
+    color: #6b7280 !important;
+}
+
+/* Inputs, selects, textareas */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="search"],
+.dark select,
+.dark textarea {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #6b7280 !important;
+}
+
+/* Tables */
+.dark table thead {
+    background-color: #111827 !important;
+}
+.dark table tbody tr:hover {
+    background-color: #111827 !important;
+}
+.dark .divide-y > * {
+    border-color: #374151 !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover {
+    background-color: #111827 !important;
+}
+.dark .hover\:bg-gray-100:hover {
+    background-color: #374151 !important;
+}

@@ -1,0 +1,78 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\Auditable;
+
+class Task extends Model
+{
+    use HasFactory, SoftDeletes, Auditable;
+
+    protected $fillable = [
+        'title',
+        'description',
+        'status',
+        'priority',
+        'due_date',
+        'estimated_hours',
+        'archived_at',
+        'project_id',
+        'assigned_to',
+        'created_by',
+    ];
+
+    protected $casts = [
+        'due_date' => 'date',
+        'archived_at' => 'datetime',
+        'estimated_hours' => 'decimal:2',
+    ];
+
+    /**
+     * Get the project this task belongs to
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Get the user assigned to this task
+     */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function assignees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'task_user');
+    }
+
+    /**
+     * Get the user who created this task
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get time entries for this task
+     */
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    public function folders(): MorphMany
+    {
+        return $this->morphMany(DocumentFolder::class, 'folderable');
+    }
+}

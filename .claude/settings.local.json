@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan migrate:*)",
+      "Bash(php artisan tinker --execute=\"App\\\\Models\\\\User::whereNull\\(''is_approved''\\)->update\\([''is_approved'' => true]\\); echo ''Updated users: '' . App\\\\Models\\\\User::where\\(''is_approved'', true\\)->count\\(\\);\")",
+      "Bash(npm run build)",
+      "Bash(git add:*)",
+      "Bash(git restore --staged public/build/)",
+      "Bash(git restore:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_network_requests",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

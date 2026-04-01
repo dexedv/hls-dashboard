@@ -1,0 +1,38 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/hot
+/public/storage
+/public/build
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# License tools (private keys - NEVER commit!)
+/tools/private.pem
+/tools/public.pem
+
+# Playwright test artifacts
+/.playwright-mcp/
+
+# Docker env (contains real APP_KEY)
+.env.docker
+
+# Ignore cached files but keep directory structure
+/bootstrap/cache/*.php
+!/bootstrap/cache/.gitignore
