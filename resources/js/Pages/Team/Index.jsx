@@ -4,6 +4,7 @@ import { useState } from 'react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
+import UserAvatar from '@/Components/UserAvatar';
 
 export default function TeamIndex({ users, labels }) {
     const [showModal, setShowModal] = useState(false);
@@ -77,9 +78,7 @@ export default function TeamIndex({ users, labels }) {
                         {users.data.map((user) => (
                             <div key={user.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                                        <span className="text-primary-600 font-medium">{user.name.charAt(0)}</span>
-                                    </div>
+                                    <UserAvatar user={user} size="md" />
                                     <div>
                                         <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>

@@ -1,5 +1,6 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage, router } from '@inertiajs/react';
+import UserAvatar from '@/Components/UserAvatar';
 
 export default function TeamShow() {
     const { user } = usePage().props;
@@ -48,9 +49,7 @@ export default function TeamShow() {
                 {/* Profile card */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-700">
-                            {user.name?.charAt(0)?.toUpperCase()}
-                        </div>
+                        <UserAvatar user={user} size="xl" />
                         <div>
                             <p className="text-lg font-semibold text-gray-900">{user.name}</p>
                             <p className="text-sm text-gray-500">{user.email}</p>

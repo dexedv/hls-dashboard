@@ -2,6 +2,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import DocumentManager from '@/Components/DocumentManager';
+import UserAvatar from '@/Components/UserAvatar';
 
 const statusColors = {
     todo:        'bg-gray-100 text-gray-700',
@@ -158,9 +159,7 @@ export default function TaskShow({ task }) {
                                         <div className="flex flex-wrap gap-1">
                                             {task.assignees.map(a => (
                                                 <span key={a.id} className="inline-flex items-center gap-1 bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                                                    <span className="h-4 w-4 rounded-full bg-primary-200 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                                                        {a.name?.[0]?.toUpperCase()}
-                                                    </span>
+                                                    <UserAvatar user={a} size="xs" />
                                                     {a.name}
                                                 </span>
                                             ))}

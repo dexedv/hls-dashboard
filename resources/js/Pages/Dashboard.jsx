@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { DashboardSkeleton } from '@/Components/Skeleton';
+import UserAvatar from '@/Components/UserAvatar';
 
 // Icon Components (Heroicons)
 const Icons = {
@@ -434,15 +435,9 @@ function UpcomingEventsWidget({ events, currentUserId }) {
                             {/* Assignees */}
                             {ev.assignees && ev.assignees.length > 0 && (
                                 <div className="flex-shrink-0 flex -space-x-1">
-                                    {ev.assignees.slice(0, 3).map(a => {
-                                        const isMe = a.id === currentUserId;
-                                        return (
-                                            <span key={a.id} title={isMe ? 'Ich' : a.name}
-                                                className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white ${isMe ? 'bg-primary-600 text-white' : 'bg-primary-200 text-primary-800'}`}>
-                                                {a.name?.[0]?.toUpperCase()}
-                                            </span>
-                                        );
-                                    })}
+                                    {ev.assignees.slice(0, 3).map(a => (
+                                        <UserAvatar key={a.id} user={a} size="sm" className="border-2 border-white" />
+                                    ))}
                                     {ev.assignees.length > 3 && (
                                         <span className="h-6 w-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold border-2 border-white">
                                             +{ev.assignees.length - 3}

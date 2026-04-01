@@ -3,6 +3,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import PageHeader, { Button, IconButton } from '@/Components/PageHeader';
 import SearchInput from '@/Components/SearchInput';
+import UserAvatar from '@/Components/UserAvatar';
 import EmptyState from '@/Components/EmptyState';
 import Pagination from '@/Components/Pagination';
 import MultiUserSelect from '@/Components/MultiUserSelect';
@@ -253,11 +254,9 @@ export default function ProjectsIndex({ projects, customers, users = [], filters
                                             {project.assignees && project.assignees.length > 0 && (
                                                 <div className="flex items-center gap-0.5 mb-3">
                                                     {project.assignees.slice(0, 5).map(a => (
-                                                        <span key={a.id} title={a.name} className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white dark:border-gray-800 -ml-1 first:ml-0 ${
-                                                            a.id === auth?.user?.id ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-                                                        }`}>
-                                                            {a.name?.[0]?.toUpperCase()}
-                                                        </span>
+                                                        <UserAvatar key={a.id} user={a} size="sm" title={a.name}
+                                                            className={`border-2 border-white dark:border-gray-800 -ml-1 first:ml-0 ${a.id === auth?.user?.id ? 'ring-1 ring-primary-400' : ''}`}
+                                                        />
                                                     ))}
                                                     {project.assignees.length > 5 && (
                                                         <span className="text-xs text-gray-400 ml-1.5">+{project.assignees.length - 5}</span>

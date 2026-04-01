@@ -6,6 +6,7 @@ import SearchInput from '@/Components/SearchInput';
 import EmptyState from '@/Components/EmptyState';
 import StatusBadge from '@/Components/StatusBadge';
 import Pagination from '@/Components/Pagination';
+import UserAvatar from '@/Components/UserAvatar';
 
 export default function TicketsIndex({ tickets, customers, projects, users, filters, statuses = [], priorities = [] }) {
     const { auth } = usePage().props;
@@ -236,9 +237,7 @@ export default function TicketsIndex({ tickets, customers, projects, users, filt
                                     {ticket.assignees && ticket.assignees.length > 0 && (
                                         <span className="flex items-center gap-0.5">
                                             {ticket.assignees.slice(0, 4).map(a => (
-                                                <span key={a.id} title={a.name} className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 border-white -ml-0.5 first:ml-0 ${a.id === auth?.user?.id ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                                                    {a.name?.[0]?.toUpperCase()}
-                                                </span>
+                                                <UserAvatar key={a.id} user={a} size="xs" className="-ml-0.5 first:ml-0 border-2 border-white" />
                                             ))}
                                             {ticket.assignees.length > 4 && <span className="ml-1">+{ticket.assignees.length - 4}</span>}
                                         </span>

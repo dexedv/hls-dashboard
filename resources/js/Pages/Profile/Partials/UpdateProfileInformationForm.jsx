@@ -9,7 +9,7 @@ import { useRef, useState } from 'react';
 export default function UpdateProfileInformation({ mustVerifyEmail, status, className = '' }) {
     const user = usePage().props.auth.user;
     const fileInputRef = useRef(null);
-    const [preview, setPreview] = useState(user.avatar ? `/storage/${user.avatar}` : null);
+    const [preview, setPreview] = useState(user.avatar ? `/storage/${user.avatar}?v=${Date.now()}` : null);
 
     const { data, setData, post, errors, processing, recentlySuccessful } = useForm({
         _method: 'PATCH',

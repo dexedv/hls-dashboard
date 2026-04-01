@@ -1,6 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import PageHeader, { Button } from '@/Components/PageHeader';
+import UserAvatar from '@/Components/UserAvatar';
 
 const EVENT_TYPE_LABELS = {
     meeting: 'Meeting', deadline: 'Deadline', call: 'Anruf',
@@ -79,9 +80,7 @@ export default function CalendarShow({ event }) {
                                 <div className="flex flex-wrap gap-1.5">
                                     {event.assignees.map(a => (
                                         <span key={a.id} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 bg-primary-100 text-primary-700 rounded-full font-medium">
-                                            <span className="h-4 w-4 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold">
-                                                {a.name?.[0]?.toUpperCase()}
-                                            </span>
+                                            <UserAvatar user={a} size="xs" />
                                             {a.name}
                                         </span>
                                     ))}

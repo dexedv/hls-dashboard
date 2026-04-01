@@ -7,6 +7,7 @@ import EmptyState from '@/Components/EmptyState';
 import StatusBadge from '@/Components/StatusBadge';
 import Pagination from '@/Components/Pagination';
 import MultiUserSelect from '@/Components/MultiUserSelect';
+import UserAvatar from '@/Components/UserAvatar';
 
 export default function TasksIndex({ tasks, filters, projects, users, statuses = [], priorities = [] }) {
     const { auth } = usePage().props;
@@ -229,9 +230,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                             {task.assignees && task.assignees.length > 0 && (
                                                 <span className="flex items-center">
                                                     {task.assignees.slice(0, 3).map(a => (
-                                                        <span key={a.id} title={a.name} className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white -ml-1 first:ml-0 ${a.id === auth?.user?.id ? 'bg-primary-600 text-white' : 'bg-primary-100 text-primary-700'}`}>
-                                                            {a.name?.[0]?.toUpperCase()}
-                                                        </span>
+                                                        <UserAvatar key={a.id} user={a} size="sm" className="-ml-1 first:ml-0 border-2 border-white" />
                                                     ))}
                                                     {task.assignees.length > 3 && <span className="h-6 w-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-semibold border-2 border-white -ml-1">+{task.assignees.length - 3}</span>}
                                                 </span>
@@ -302,9 +301,7 @@ export default function TasksIndex({ tasks, filters, projects, users, statuses =
                                         {task.assignees && task.assignees.length > 0 && (
                                             <span className="flex items-center gap-0.5">
                                                 {task.assignees.slice(0, 3).map(a => (
-                                                    <span key={a.id} title={a.name} className="h-5 w-5 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-semibold">
-                                                        {a.name?.[0]?.toUpperCase()}
-                                                    </span>
+                                                    <UserAvatar key={a.id} user={a} size="xs" />
                                                 ))}
                                                 {task.assignees.length > 3 && (
                                                     <span className="text-xs text-gray-500 ml-0.5">+{task.assignees.length - 3}</span>

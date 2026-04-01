@@ -2,6 +2,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import DocumentManager from '@/Components/DocumentManager';
+import UserAvatar from '@/Components/UserAvatar';
 
 export default function ProjectShow({ project, statuses = [], priorities = [], folders = [] }) {
     const [changingStatus, setChangingStatus] = useState(false);
@@ -157,10 +158,7 @@ export default function ProjectShow({ project, statuses = [], priorities = [], f
                                             {task.assignees && task.assignees.length > 0 && (
                                                 <div className="flex -space-x-1">
                                                     {task.assignees.slice(0, 3).map(a => (
-                                                        <span key={a.id} title={a.name}
-                                                            className="h-5 w-5 rounded-full bg-primary-200 text-primary-800 flex items-center justify-center text-xs font-bold border border-white">
-                                                            {a.name?.[0]?.toUpperCase()}
-                                                        </span>
+                                                        <UserAvatar key={a.id} user={a} size="xs" className="border border-white" />
                                                     ))}
                                                 </div>
                                             )}
@@ -209,9 +207,7 @@ export default function ProjectShow({ project, statuses = [], priorities = [], f
                                     <dd className="flex flex-wrap gap-1.5">
                                         {project.assignees.map(a => (
                                             <span key={a.id} className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 px-2 py-1 rounded-full text-xs font-medium">
-                                                <span className="h-4 w-4 rounded-full bg-primary-200 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                                                    {a.name?.[0]?.toUpperCase()}
-                                                </span>
+                                                <UserAvatar user={a} size="xs" />
                                                 {a.name}
                                             </span>
                                         ))}

@@ -1,6 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
+import UserAvatar from '@/Components/UserAvatar';
 
 const statusColors = {
     open:        'bg-blue-100 text-blue-700',
@@ -117,11 +118,7 @@ export default function TicketShow({ ticket }) {
                             <ul className="divide-y divide-gray-50 px-6 pt-4 pb-2">
                                 {ticket.comments.map((comment) => (
                                     <li key={comment.id} className="flex gap-3 py-4">
-                                        <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-xs font-bold text-primary-700">
-                                                {comment.user?.name?.[0]?.toUpperCase() || '?'}
-                                            </span>
-                                        </div>
+                                        <UserAvatar user={comment.user} size="sm" className="flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-baseline gap-2 flex-wrap">
                                                 <span className="text-sm font-semibold text-gray-900">{comment.user?.name || 'Unbekannt'}</span>
@@ -195,9 +192,7 @@ export default function TicketShow({ ticket }) {
                                         <div className="flex flex-wrap gap-1">
                                             {ticket.assignees.map(a => (
                                                 <span key={a.id} className="inline-flex items-center gap-1 bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                                                    <span className="h-4 w-4 rounded-full bg-primary-200 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                                                        {a.name?.[0]?.toUpperCase()}
-                                                    </span>
+                                                    <UserAvatar user={a} size="xs" />
                                                     {a.name}
                                                 </span>
                                             ))}

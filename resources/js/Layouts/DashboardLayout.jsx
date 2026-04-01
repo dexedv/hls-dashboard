@@ -2,6 +2,7 @@ import { Link, usePage, useForm, router } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
 import ChatButton from '@/Components/ChatButton';
 import Toast from '@/Components/Toast';
+import UserAvatar from '@/Components/UserAvatar';
 import axios from 'axios';
 
 // Time formatting function
@@ -611,11 +612,7 @@ export default function DashboardLayout({ children, title }) {
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                                     className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                                 >
-                                    <img
-                                        className="h-8 w-8 rounded-full bg-gray-50 ring-2 ring-gray-100"
-                                        src={auth.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.user.name)}&background=0ea5e9&color=fff`}
-                                        alt=""
-                                    />
+                                    <UserAvatar user={auth.user} size="md" className="ring-2 ring-gray-100" />
                                     <div className="hidden lg:block text-left">
                                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100 block">{auth.user.name}</span>
                                         <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{auth.user.role || 'Employee'}</span>
